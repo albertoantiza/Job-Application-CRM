@@ -4,7 +4,10 @@
   "description": "This project is an educational and functional project for me to work in my backend skills. It is a CRM to track my job interview process, the companies I apply to, responses I get, contacts and all the information related to the job hunt.",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "format": "prettier --write .",
+    "lint": "eslint . ",
+    "lint:fix": "eslint . --fix "
   },
   "repository": {
     "type": "git",
@@ -17,5 +20,10 @@
   "bugs": {
     "url": "https://github.com/elchopo7/CRM/issues"
   },
-  "homepage": "https://github.com/elchopo7/CRM#readme"
+  "homepage": "https://github.com/elchopo7/CRM#readme",
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.4.0",
+    "prettier": "^3.8.3"
+  }
 }
