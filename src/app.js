@@ -1,5 +1,6 @@
 import express from 'express'
-import index from './routes/index.js'
+import routes from './routes/index.js'
+import { notFound } from './middlewares/notFound.js'
 import { errorHandler } from './middlewares/errorHandler.js'
 
 const app = express()
@@ -10,8 +11,9 @@ app.get('/health', (req, res) => {
   res.status(200).json({ ok: true })
 })
 
-app.use('/jobs', index)
+app.use('/api', routes)
 
+app.use(notFound)
 app.use(errorHandler)
 
 export default app
