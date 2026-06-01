@@ -1,14 +1,8 @@
 import { Router } from 'express'
-import {
-  getJobs,
-  getJobById,
-  createJob
-} from '../controllers/jobs.controller.js'
+import applicationsRoutes from './applications.routes.js'
 
 const router = Router()
 
-router.get('/', getJobs)
-router.get('/:id', getJobById)
-router.post('/', createJob)
+router.use('/applications', applicationsRoutes)
 
 export default router
