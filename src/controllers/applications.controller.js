@@ -15,3 +15,9 @@ export const getApplicationById = (req, res) => {
 
   return res.status(200).json(application)
 }
+
+export const createApplication = (req, res) => {
+  const newApplication = addApplication(req.body)
+
+  return res.status(201).json(newApplication)
+}
