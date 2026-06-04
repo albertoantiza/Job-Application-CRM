@@ -1,7 +1,7 @@
 import express from 'express'
-import routes from './routes/index.js'
-import { notFound } from './middlewares/notFound.js'
+import applicationsRoutes from './routes/applications.routes.js'
 import { errorHandler } from './middlewares/errorHandler.js'
+import { notFound } from './middlewares/notFound.js'
 
 const app = express()
 
@@ -11,7 +11,7 @@ app.get('/health', (req, res) => {
   res.status(200).json({ ok: true })
 })
 
-app.use('/api', routes)
+app.use('/applications', applicationsRoutes)
 
 app.use(notFound)
 app.use(errorHandler)

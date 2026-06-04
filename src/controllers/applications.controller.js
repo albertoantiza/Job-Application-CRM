@@ -1,7 +1,9 @@
 import {
   getAllApplications,
   findApplicationById,
-  addApplication
+  addApplication,
+  updateApplication,
+  deleteApplication
 } from '../services/applications.service.js'
 
 export const getApplications = (req, res) => {
@@ -20,4 +22,21 @@ export const createApplication = (req, res) => {
   const newApplication = addApplication(req.body)
 
   return res.status(201).json(newApplication)
+}
+
+export const updateApplicationById = (req, res) => {
+  const id = Number(req.params.id)
+  const updatedApplication = updateApplication(id, req.body)
+
+  return res.status(200).json(updatedApplication)
+}
+
+export const deleteApplicationById = (req, res) => {
+  const id = Number(req.params.id)
+  const deletedApplication = deleteApplication(id)
+
+  return res.status(200).json({
+    message: 'Application deleted successfully',
+    data: deletedApplication
+  })
 }
