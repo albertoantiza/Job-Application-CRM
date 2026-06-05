@@ -10,12 +10,23 @@ export const validateRequest = (schema) => {
           return next(new ApiError(400, `${key} is required`))
         }
 
-        if (rules.type && typeof value !== rules.type) {
+        if (
+          value !== undefined &&
+          value !== null &&
+          rules.type &&
+          typeof value !== rules.type
+        ) {
           return next(new ApiError(400, `${key} must be a ${rules.type}`))
         }
 
-        if (rules.type === 'string' && !value.trim()) {
-          return next(new ApiError(400, `${key} cannot be empty`))
+        if (rules.type === 'string' && value !== undefined && value !== null) {
+          if (typeof value !== 'string') {
+            return next(new ApiError(400, `${key} must be a string`))
+          }
+
+          if (!value.trim()) {
+            return next(new ApiError(400, `${key} cannot be empty`))
+          }
         }
       }
     }

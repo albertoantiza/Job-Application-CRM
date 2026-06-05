@@ -1,29 +1,29 @@
-import { contacts } from '../repositories/contacts.repository.js'
+import { companies } from '../repositories/companies.repository.js'
 import ApiError from '../utils/ApiError.js'
 
-export const getAllContacts = () => {
-  return contacts
+export const getAllCompanies = () => {
+  return companies
 }
 
-export const findContactById = (id) => {
-  const contact = contacts.find((item) => item.id === id)
+export const findCompanyById = (id) => {
+  const company = companies.find((item) => item.id === id)
 
-  if (!contact) {
-    throw new ApiError(404, 'Contact not found')
+  if (!company) {
+    throw new ApiError(404, 'Company not found')
   }
 
-  return contact
+  return company
 }
 
-export const addContact = ({ name, email, companyId }) => {
-  const newContact = {
-    id: contacts.length + 1,
+export const addCompany = ({ name, website, location }) => {
+  const newCompany = {
+    id: companies.length + 1,
     name,
-    email,
-    companyId: companyId || null
+    website: website || null,
+    location: location || null
   }
 
-  contacts.push(newContact)
+  companies.push(newCompany)
 
-  return newContact
+  return newCompany
 }

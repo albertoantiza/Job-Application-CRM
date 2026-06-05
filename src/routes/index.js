@@ -7,6 +7,8 @@ import notesRoutes from './notes.routes.js'
 
 const router = Router()
 
+console.log('Registering routes...')
+
 router.use('/applications', applicationsRoutes)
 router.use('/contacts', contactsRoutes)
 router.use('/companies', companiesRoutes)
