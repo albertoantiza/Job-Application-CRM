@@ -1,4 +1,5 @@
 import express from 'express'
+import pool from './config/db.js'
 import dotenv from 'dotenv'
 import routes from './routes/index.js'
 import { notFound } from './middlewares/notFound.js'
