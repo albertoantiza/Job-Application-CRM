@@ -1,7 +1,10 @@
 import express from 'express'
+import dotenv from 'dotenv'
 import routes from './routes/index.js'
 import { notFound } from './middlewares/notFound.js'
 import { errorHandler } from './middlewares/errorHandler.js'
+
+dotenv.config()
 
 const app = express()
 
