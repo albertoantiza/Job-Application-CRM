@@ -11,8 +11,6 @@ const app = express()
 
 app.use(express.json())
 
-console.log('Loading routes...')
-
 app.use('/api', routes)
 
 app.use(notFound)
