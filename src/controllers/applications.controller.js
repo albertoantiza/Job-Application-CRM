@@ -6,6 +6,13 @@ import {
   deleteApplication
 } from '../services/applications.service.js'
 
+import pool from '../config/db.js'
+
+export const testDb = async (req, res) => {
+  const result = await pool.query('SELECT NOW()')
+  res.json(result.rows[0])
+}
+
 
 export const getApplications = (req, res) => {
   const applications = getAllApplications()
