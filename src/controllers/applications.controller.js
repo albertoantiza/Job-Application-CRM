@@ -9,8 +9,16 @@ import {
 import pool from '../config/db.js'
 
 export const testDb = async (req, res) => {
-  const result = await pool.query('SELECT NOW()')
-  res.json(result.rows[0])
+  try {
+    const result = await pool.query('SELECT NOW()')
+    return res.json(result.rows[0])
+  } catch (error) {
+    console.error('testDb failed:', error)
+    return res.status(500).json({
+      error: 'Database connection failed',
+      details: error.message
+    })
+  }
 }
 
 

@@ -4,7 +4,8 @@ import {
   getApplicationById,
   createApplication,
   updateApplicationById,
-  deleteApplicationById
+  deleteApplicationById,
+  testDb
 } from '../controllers/applications.controller.js'
 import { validateRequest } from '../middlewares/validateRequest.js'
 import {
@@ -21,7 +22,7 @@ console.log(
   router.stack.map((layer) => layer.route?.path)
 )
 
-
+router.get('/test-db', testDb)
 router.get('/', getApplications)
 router.get('/:id', validateRequest(applicationIdSchema), getApplicationById)
 router.post('/', validateRequest(createApplicationSchema), createApplication)
