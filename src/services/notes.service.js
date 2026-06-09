@@ -26,3 +26,34 @@ export const addNote = ({ applicationId, content }) => {
 
   return newNote
 }
+
+export const updateNote = (id, data) => {
+  const note = notes.find((item) => item.id === id)
+
+  if (!note) {
+    throw new ApiError(404, 'Note not found')
+  }
+
+  if (data.applicationId !== undefined) {
+    note.applicationId = data.applicationId
+  }
+
+  if (data.content !== undefined) {
+    note.content = data.content
+  }
+
+  return note
+}
+
+export const deleteNote = (id) => {
+  const index = notes.findIndex((item) => item.id === id)
+
+  if (index === -1) {
+    throw new ApiError(404, 'Note not found')
+  }
+
+  const deletedNote = notes[index]
+  notes.splice(index, 1)
+
+  return deletedNote
+}
