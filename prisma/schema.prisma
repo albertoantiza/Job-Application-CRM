@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client"
   output   = "../src/generated/prisma"
@@ -12,4 +6,65 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+model Company {
+  id           Int           @id @default(autoincrement())
+  name         String
+  website      String?
+  location     String?
+  applications Application[]
+  contacts     Contact[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+}
+
+model Application {
+  id          Int          @id @default(autoincrement())
+  companyId   Int?
+  company     Company?     @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  role        String
+  status      String       @default("applied")
+  interviews  Interview[]
+  notes       Note[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([companyId])
+}
+
+model Contact {
+  id          Int       @id @default(autoincrement())
+  companyId   Int?
+  company     Company?  @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  name        String
+  email       String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([companyId])
+}
+
+model Interview {
+  id            Int          @id @default(autoincrement())
+  applicationId Int
+  application   Application  @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  date          DateTime
+  stage         String
+  notes         String?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  @@index([applicationId])
+}
+
+model Note {
+  id            Int          @id @default(autoincrement())
+  applicationId Int
+  application   Application  @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  content       String
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  @@index([applicationId])
 }
