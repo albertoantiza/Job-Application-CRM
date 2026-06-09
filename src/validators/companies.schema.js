@@ -15,6 +15,29 @@ export const createCompanySchema = {
   }
 }
 
+export const updateCompanySchema = {
+  params: {
+    id: {
+      required: true,
+      type: 'number'
+    }
+  },
+  body: {
+    name: {
+      required: false,
+      type: 'string'
+    },
+    website: {
+      required: false,
+      type: 'string'
+    },
+    location: {
+      required: false,
+      type: 'string'
+    }
+  }
+}
+
 export const companyIdSchema = {
   params: {
     id: {
