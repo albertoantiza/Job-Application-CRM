@@ -27,3 +27,38 @@ export const addContact = ({ name, email, companyId }) => {
 
   return newContact
 }
+
+export const updateContact = (id, data) => {
+  const contact = contacts.find((item) => item.id === id)
+
+  if (!contact) {
+    throw new ApiError(404, 'Contact not found')
+  }
+
+  if (data.name !== undefined) {
+    contact.name = data.name
+  }
+
+  if (data.email !== undefined) {
+    contact.email = data.email
+  }
+
+  if (data.companyId !== undefined) {
+    contact.companyId = data.companyId || null
+  }
+
+  return contact
+}
+
+export const deleteContact = (id) => {
+  const index = contacts.findIndex((item) => item.id === id)
+
+  if (index === -1) {
+    throw new ApiError(404, 'Contact not found')
+  }
+
+  const deletedContact = contacts[index]
+  contacts.splice(index, 1)
+
+  return deletedContact
+}

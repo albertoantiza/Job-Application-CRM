@@ -15,6 +15,29 @@ export const createContactSchema = {
   }
 }
 
+export const updateContactSchema = {
+  params: {
+    id: {
+      required: true,
+      type: 'number'
+    }
+  },
+  body: {
+    name: {
+      required: false,
+      type: 'string'
+    },
+    email: {
+      required: false,
+      type: 'string'
+    },
+    companyId: {
+      required: false,
+      type: 'number'
+    }
+  }
+}
+
 export const contactIdSchema = {
   params: {
     id: {
