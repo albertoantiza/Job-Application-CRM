@@ -20,7 +20,27 @@ export const testDb = async (req, res) => {
 }
 
 export const getApplications = async (req, res) => {
+  const { search, status, companyId } = req.query
+
+  const where = {}
+
+  if (status) {
+    where.status = String(status)
+  }
+
+  if (companyId) {
+    where.companyId = Number(companyId)
+  }
+
+  if (search) {
+    where.OR = [
+      { role: { contains: String(search), mode: 'insensitive' } },
+      { status: { contains: String(search), mode: 'insensitive' } }
+    ]
+  }
+
   const applications = await prisma.application.findMany({
+    where: Object.keys(where).length ? where : undefined,
     orderBy: { id: 'asc' }
   })
 

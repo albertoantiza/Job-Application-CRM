@@ -1,7 +1,24 @@
 import prisma from '../config/prisma.js'
 
 export const getCompanies = async (req, res) => {
+  const { search, location } = req.query
+
+  const where = {}
+
+  if (search) {
+    where.OR = [
+      { name: { contains: String(search), mode: 'insensitive' } },
+      { website: { contains: String(search), mode: 'insensitive' } },
+      { location: { contains: String(search), mode: 'insensitive' } }
+    ]
+  }
+
+  if (location) {
+    where.location = { contains: String(location), mode: 'insensitive' }
+  }
+
   const companies = await prisma.company.findMany({
+    where: Object.keys(where).length ? where : undefined,
     orderBy: { id: 'asc' }
   })
 

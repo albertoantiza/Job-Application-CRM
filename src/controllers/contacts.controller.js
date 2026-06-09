@@ -1,7 +1,23 @@
 import prisma from '../config/prisma.js'
 
 export const getContacts = async (req, res) => {
+  const { search, companyId } = req.query
+
+  const where = {}
+
+  if (companyId) {
+    where.companyId = Number(companyId)
+  }
+
+  if (search) {
+    where.OR = [
+      { name: { contains: String(search), mode: 'insensitive' } },
+      { email: { contains: String(search), mode: 'insensitive' } }
+    ]
+  }
+
   const contacts = await prisma.contact.findMany({
+    where: Object.keys(where).length ? where : undefined,
     orderBy: { id: 'asc' }
   })
 
