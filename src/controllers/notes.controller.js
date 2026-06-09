@@ -1,41 +1,78 @@
-import {
-  getAllNotes,
-  findNoteById,
-  addNote,
-  updateNote,
-  deleteNote
-} from '../services/notes.service.js'
+import prisma from '../config/prisma.js'
 
-export const getNotes = (req, res) => {
-  const notes = getAllNotes()
+export const getNotes = async (req, res) => {
+  const notes = await prisma.note.findMany({
+    orderBy: { id: 'asc' }
+  })
+
   return res.status(200).json(notes)
 }
 
-export const getNoteById = (req, res) => {
+export const getNoteById = async (req, res) => {
   const id = Number(req.params.id)
-  const note = findNoteById(id)
+
+  const note = await prisma.note.findUnique({
+    where: { id }
+  })
+
+  if (!note) {
+    return res.status(404).json({ error: 'Note not found' })
+  }
 
   return res.status(200).json(note)
 }
 
-export const createNote = (req, res) => {
-  const newNote = addNote(req.body)
+export const createNote = async (req, res) => {
+  const { applicationId, content } = req.body
+
+  const newNote = await prisma.note.create({
+    data: {
+      applicationId,
+      content
+    }
+  })
+
   return res.status(201).json(newNote)
 }
 
-export const updateNoteById = (req, res) => {
+export const updateNoteById = async (req, res) => {
   const id = Number(req.params.id)
-  const updatedNote = updateNote(id, req.body)
 
-  return res.status(200).json(updatedNote)
+  try {
+    const updatedNote = await prisma.note.update({
+      where: { id },
+      data: {
+        ...req.body
+      }
+    })
+
+    return res.status(200).json(updatedNote)
+  } catch (error) {
+    if (error.code === 'P2025') {
+      return res.status(404).json({ error: 'Note not found' })
+    }
+
+    throw error
+  }
 }
 
-export const deleteNoteById = (req, res) => {
+export const deleteNoteById = async (req, res) => {
   const id = Number(req.params.id)
-  const deletedNote = deleteNote(id)
 
-  return res.status(200).json({
-    message: 'Note deleted successfully',
-    data: deletedNote
-  })
+  try {
+    const deletedNote = await prisma.note.delete({
+      where: { id }
+    })
+
+    return res.status(200).json({
+      message: 'Note deleted successfully',
+      data: deletedNote
+    })
+  } catch (error) {
+    if (error.code === 'P2025') {
+      return res.status(404).json({ error: 'Note not found' })
+    }
+
+    throw error
+  }
 }

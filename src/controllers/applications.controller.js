@@ -1,17 +1,15 @@
-import {
-  getAllApplications,
-  findApplicationById,
-  addApplication,
-  updateApplication,
-  deleteApplication
-} from '../services/applications.service.js'
-
-import pool from '../config/db.js'
+import prisma from '../config/prisma.js'
 
 export const testDb = async (req, res) => {
   try {
-    const result = await pool.query('SELECT NOW()')
-    return res.json(result.rows[0])
+    const applications = await prisma.application.findMany({
+      take: 1
+    })
+
+    return res.json({
+      ok: true,
+      count: applications.length
+    })
   } catch (error) {
     console.error('testDb failed:', error)
     return res.status(500).json({
@@ -21,38 +19,81 @@ export const testDb = async (req, res) => {
   }
 }
 
+export const getApplications = async (req, res) => {
+  const applications = await prisma.application.findMany({
+    orderBy: { id: 'asc' }
+  })
 
-export const getApplications = (req, res) => {
-  const applications = getAllApplications()
   return res.status(200).json(applications)
 }
 
-export const getApplicationById = (req, res) => {
+export const getApplicationById = async (req, res) => {
   const id = Number(req.params.id)
-  const application = findApplicationById(id)
+
+  const application = await prisma.application.findUnique({
+    where: { id }
+  })
+
+  if (!application) {
+    return res.status(404).json({ error: 'Application not found' })
+  }
 
   return res.status(200).json(application)
 }
 
-export const createApplication = (req, res) => {
-  const newApplication = addApplication(req.body)
+export const createApplication = async (req, res) => {
+  const { companyId, role, status } = req.body
+
+  const newApplication = await prisma.application.create({
+    data: {
+      companyId: companyId ?? null,
+      role,
+      status: status || 'applied'
+    }
+  })
 
   return res.status(201).json(newApplication)
 }
 
-export const updateApplicationById = (req, res) => {
+export const updateApplicationById = async (req, res) => {
   const id = Number(req.params.id)
-  const updatedApplication = updateApplication(id, req.body)
 
-  return res.status(200).json(updatedApplication)
+  try {
+    const updatedApplication = await prisma.application.update({
+      where: { id },
+      data: {
+        ...req.body,
+        companyId: req.body.companyId ?? undefined
+      }
+    })
+
+    return res.status(200).json(updatedApplication)
+  } catch (error) {
+    if (error.code === 'P2025') {
+      return res.status(404).json({ error: 'Application not found' })
+    }
+
+    throw error
+  }
 }
 
-export const deleteApplicationById = (req, res) => {
+export const deleteApplicationById = async (req, res) => {
   const id = Number(req.params.id)
-  const deletedApplication = deleteApplication(id)
 
-  return res.status(200).json({
-    message: 'Application deleted successfully',
-    data: deletedApplication
-  })
+  try {
+    const deletedApplication = await prisma.application.delete({
+      where: { id }
+    })
+
+    return res.status(200).json({
+      message: 'Application deleted successfully',
+      data: deletedApplication
+    })
+  } catch (error) {
+    if (error.code === 'P2025') {
+      return res.status(404).json({ error: 'Application not found' })
+    }
+
+    throw error
+  }
 }

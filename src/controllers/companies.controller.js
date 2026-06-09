@@ -1,41 +1,79 @@
-import {
-  getAllCompanies,
-  findCompanyById,
-  addCompany,
-  updateCompany,
-  deleteCompany
-} from '../services/companies.service.js'
+import prisma from '../config/prisma.js'
 
-export const getCompanies = (req, res) => {
-  const companies = getAllCompanies()
+export const getCompanies = async (req, res) => {
+  const companies = await prisma.company.findMany({
+    orderBy: { id: 'asc' }
+  })
+
   return res.status(200).json(companies)
 }
 
-export const getCompanyById = (req, res) => {
+export const getCompanyById = async (req, res) => {
   const id = Number(req.params.id)
-  const company = findCompanyById(id)
+
+  const company = await prisma.company.findUnique({
+    where: { id }
+  })
+
+  if (!company) {
+    return res.status(404).json({ error: 'Company not found' })
+  }
 
   return res.status(200).json(company)
 }
 
-export const createCompany = (req, res) => {
-  const newCompany = addCompany(req.body)
+export const createCompany = async (req, res) => {
+  const { name, website, location } = req.body
+
+  const newCompany = await prisma.company.create({
+    data: {
+      name,
+      website: website || null,
+      location: location || null
+    }
+  })
+
   return res.status(201).json(newCompany)
 }
 
-export const updateCompanyById = (req, res) => {
+export const updateCompanyById = async (req, res) => {
   const id = Number(req.params.id)
-  const updatedCompany = updateCompany(id, req.body)
 
-  return res.status(200).json(updatedCompany)
+  try {
+    const updatedCompany = await prisma.company.update({
+      where: { id },
+      data: {
+        ...req.body
+      }
+    })
+
+    return res.status(200).json(updatedCompany)
+  } catch (error) {
+    if (error.code === 'P2025') {
+      return res.status(404).json({ error: 'Company not found' })
+    }
+
+    throw error
+  }
 }
 
-export const deleteCompanyById = (req, res) => {
+export const deleteCompanyById = async (req, res) => {
   const id = Number(req.params.id)
-  const deletedCompany = deleteCompany(id)
 
-  return res.status(200).json({
-    message: 'Company deleted successfully',
-    data: deletedCompany
-  })
+  try {
+    const deletedCompany = await prisma.company.delete({
+      where: { id }
+    })
+
+    return res.status(200).json({
+      message: 'Company deleted successfully',
+      data: deletedCompany
+    })
+  } catch (error) {
+    if (error.code === 'P2025') {
+      return res.status(404).json({ error: 'Company not found' })
+    }
+
+    throw error
+  }
 }
