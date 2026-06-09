@@ -25,16 +25,30 @@ export const getInterviewById = async (req, res) => {
 export const createInterview = async (req, res) => {
   const { applicationId, date, stage, notes } = req.body
 
-  const newInterview = await prisma.interview.create({
-    data: {
-      applicationId,
-      date: new Date(date),
-      stage,
-      notes: notes || null
-    }
-  })
+  try {
+    const newInterview = await prisma.interview.create({
+      data: {
+        applicationId,
+        date: new Date(date),
+        stage,
+        notes: notes || null
+      }
+    })
 
-  return res.status(201).json(newInterview)
+    return res.status(201).json(newInterview)
+  } catch (error) {
+    if (error.code === 'P2003') {
+      return res.status(400).json({
+        error: 'Invalid applicationId',
+        details: 'The related application does not exist'
+      })
+    }
+
+    return res.status(400).json({
+      error: 'Could not create interview',
+      details: error.message
+    })
+  }
 }
 
 export const updateInterviewById = async (req, res) => {
@@ -54,6 +68,13 @@ export const updateInterviewById = async (req, res) => {
   } catch (error) {
     if (error.code === 'P2025') {
       return res.status(404).json({ error: 'Interview not found' })
+    }
+
+    if (error.code === 'P2003') {
+      return res.status(400).json({
+        error: 'Invalid applicationId',
+        details: 'The related application does not exist'
+      })
     }
 
     throw error

@@ -1,8 +1,8 @@
 export const createApplicationSchema = {
   body: {
-    company: {
-      required: true,
-      type: 'string'
+    companyId: {
+      required: false,
+      type: 'number'
     },
     role: {
       required: true,
@@ -23,9 +23,9 @@ export const updateApplicationSchema = {
     }
   },
   body: {
-    company: {
+    companyId: {
       required: false,
-      type: 'string'
+      type: 'number'
     },
     role: {
       required: false,

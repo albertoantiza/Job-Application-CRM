@@ -25,14 +25,28 @@ export const getNoteById = async (req, res) => {
 export const createNote = async (req, res) => {
   const { applicationId, content } = req.body
 
-  const newNote = await prisma.note.create({
-    data: {
-      applicationId,
-      content
-    }
-  })
+  try {
+    const newNote = await prisma.note.create({
+      data: {
+        applicationId,
+        content
+      }
+    })
 
-  return res.status(201).json(newNote)
+    return res.status(201).json(newNote)
+  } catch (error) {
+    if (error.code === 'P2003') {
+      return res.status(400).json({
+        error: 'Invalid applicationId',
+        details: 'The related application does not exist'
+      })
+    }
+
+    return res.status(400).json({
+      error: 'Could not create note',
+      details: error.message
+    })
+  }
 }
 
 export const updateNoteById = async (req, res) => {
@@ -50,6 +64,13 @@ export const updateNoteById = async (req, res) => {
   } catch (error) {
     if (error.code === 'P2025') {
       return res.status(404).json({ error: 'Note not found' })
+    }
+
+    if (error.code === 'P2003') {
+      return res.status(400).json({
+        error: 'Invalid applicationId',
+        details: 'The related application does not exist'
+      })
     }
 
     throw error

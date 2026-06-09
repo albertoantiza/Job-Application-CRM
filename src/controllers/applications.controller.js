@@ -64,15 +64,26 @@ export const getApplicationById = async (req, res) => {
 export const createApplication = async (req, res) => {
   const { companyId, role, status } = req.body
 
-  const newApplication = await prisma.application.create({
-    data: {
-      companyId: companyId ?? null,
-      role,
-      status: status || 'applied'
-    }
-  })
+  try {
+    const newApplication = await prisma.application.create({
+      data: {
+        companyId: companyId ?? null,
+        role,
+        status: status || 'applied'
+      }
+    })
 
-  return res.status(201).json(newApplication)
+    return res.status(201).json(newApplication)
+  } catch (error) {
+    if (error.code === 'P2003') {
+      return res.status(400).json({
+        error: 'Invalid companyId',
+        details: 'The related company does not exist'
+      })
+    }
+
+    throw error
+  }
 }
 
 export const updateApplicationById = async (req, res) => {
@@ -91,6 +102,13 @@ export const updateApplicationById = async (req, res) => {
   } catch (error) {
     if (error.code === 'P2025') {
       return res.status(404).json({ error: 'Application not found' })
+    }
+
+    if (error.code === 'P2003') {
+      return res.status(400).json({
+        error: 'Invalid companyId',
+        details: 'The related company does not exist'
+      })
     }
 
     throw error

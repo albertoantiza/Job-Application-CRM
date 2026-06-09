@@ -41,15 +41,29 @@ export const getContactById = async (req, res) => {
 export const createContact = async (req, res) => {
   const { name, email, companyId } = req.body
 
-  const newContact = await prisma.contact.create({
-    data: {
-      name,
-      email,
-      companyId: companyId || null
-    }
-  })
+  try {
+    const newContact = await prisma.contact.create({
+      data: {
+        name,
+        email,
+        companyId: companyId || null
+      }
+    })
 
-  return res.status(201).json(newContact)
+    return res.status(201).json(newContact)
+  } catch (error) {
+    if (error.code === 'P2003') {
+      return res.status(400).json({
+        error: 'Invalid companyId',
+        details: 'The related company does not exist'
+      })
+    }
+
+    return res.status(400).json({
+      error: 'Could not create contact',
+      details: error.message
+    })
+  }
 }
 
 export const updateContactById = async (req, res) => {

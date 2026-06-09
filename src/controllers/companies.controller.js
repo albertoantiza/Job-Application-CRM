@@ -42,15 +42,22 @@ export const getCompanyById = async (req, res) => {
 export const createCompany = async (req, res) => {
   const { name, website, location } = req.body
 
-  const newCompany = await prisma.company.create({
-    data: {
-      name,
-      website: website || null,
-      location: location || null
-    }
-  })
+  try {
+    const newCompany = await prisma.company.create({
+      data: {
+        name,
+        website: website || null,
+        location: location || null
+      }
+    })
 
-  return res.status(201).json(newCompany)
+    return res.status(201).json(newCompany)
+  } catch (error) {
+    return res.status(400).json({
+      error: 'Could not create company',
+      details: error.message
+    })
+  }
 }
 
 export const updateCompanyById = async (req, res) => {
