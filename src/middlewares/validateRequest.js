@@ -9,12 +9,16 @@ const isValidDate = (value) => {
 
 export const validateRequest = (schema) => {
   return (req, res, next) => {
+    const fail = (field, message, details) => {
+      return next(new ApiError(400, message, { field, details }))
+    }
+
     if (schema.body) {
       for (const [key, rules] of Object.entries(schema.body)) {
         const value = req.body[key]
 
         if (rules.required && (value === undefined || value === null)) {
-          return next(new ApiError(400, `${key} is required`))
+          return fail(key, `${key} is required`)
         }
 
         if (
@@ -23,28 +27,32 @@ export const validateRequest = (schema) => {
           rules.type &&
           typeof value !== rules.type
         ) {
-          return next(new ApiError(400, `${key} must be a ${rules.type}`))
+          return fail(
+            key,
+            `${key} must be a ${rules.type}`,
+            `Expected ${rules.type} but received ${typeof value}`
+          )
         }
 
         if (rules.type === 'string' && value !== undefined && value !== null) {
           if (typeof value !== 'string') {
-            return next(new ApiError(400, `${key} must be a string`))
+            return fail(key, `${key} must be a string`)
           }
 
           if (!value.trim()) {
-            return next(new ApiError(400, `${key} cannot be empty`))
+            return fail(key, `${key} cannot be empty`)
           }
         }
 
         if (rules.format === 'email' && value !== undefined && value !== null) {
           if (typeof value !== 'string' || !isValidEmail(value)) {
-            return next(new ApiError(400, `${key} must be a valid email`))
+            return fail(key, `${key} must be a valid email`)
           }
         }
 
         if (rules.format === 'date' && value !== undefined && value !== null) {
           if (typeof value !== 'string' || !isValidDate(value)) {
-            return next(new ApiError(400, `${key} must be a valid date`))
+            return fail(key, `${key} must be a valid date`)
           }
         }
       }
@@ -55,14 +63,14 @@ export const validateRequest = (schema) => {
         const value = req.params[key]
 
         if (rules.required && (value === undefined || value === null)) {
-          return next(new ApiError(400, `${key} is required`))
+          return fail(key, `${key} is required`)
         }
 
         if (rules.type === 'number') {
           const parsed = Number(value)
 
           if (Number.isNaN(parsed)) {
-            return next(new ApiError(400, `${key} must be a number`))
+            return fail(key, `${key} must be a number`)
           }
         }
       }
