@@ -62,13 +62,24 @@ export const createCompany = async (req, res) => {
 
 export const updateCompanyById = async (req, res) => {
   const id = Number(req.params.id)
+  const { name, website, location } = req.body
+  const data = {}
+
+  if (name !== undefined) data.name = name
+  if (website !== undefined) data.website = website
+  if (location !== undefined) data.location = location
+
+  if (!Object.keys(data).length) {
+    return res.status(400).json({
+      error: 'No fields to update',
+      details: 'Send at least one of: name, website, location'
+    })
+  }
 
   try {
     const updatedCompany = await prisma.company.update({
       where: { id },
-      data: {
-        ...req.body
-      }
+      data
     })
 
     return res.status(200).json(updatedCompany)

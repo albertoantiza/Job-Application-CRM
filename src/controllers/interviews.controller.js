@@ -56,20 +56,25 @@ export const createInterview = async (req, res) => {
 export const updateInterviewById = async (req, res) => {
   const id = Number(req.params.id)
   const { applicationId, date, notes, ...rest } = req.body
+  const data = { ...rest }
+
+  if (date !== undefined) data.date = new Date(date)
+  if (notes !== undefined) data.notes = notes
+  if (applicationId !== undefined && applicationId !== null) {
+    data.application = { connect: { id: Number(applicationId) } }
+  }
+
+  if (!Object.keys(data).length) {
+    return res.status(400).json({
+      error: 'No fields to update',
+      details: 'Send at least one of: applicationId, date, stage, notes'
+    })
+  }
 
   try {
     const updatedInterview = await prisma.interview.update({
       where: { id },
-      data: {
-        ...rest,
-        ...(date === undefined ? {} : { date: new Date(date) }),
-        ...(notes === undefined ? {} : { notes }),
-        ...(applicationId === undefined
-          ? {}
-          : applicationId === null
-            ? {}
-            : { application: { connect: { id: Number(applicationId) } } })
-      }
+      data
     })
 
     return res.status(200).json(updatedInterview)

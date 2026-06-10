@@ -75,17 +75,25 @@ export const createContact = async (req, res) => {
 export const updateContactById = async (req, res) => {
   const id = Number(req.params.id)
   const { companyId, ...rest } = req.body
+  const data = { ...rest }
+
+  if (companyId === undefined && !Object.keys(data).length) {
+    return res.status(400).json({
+      error: 'No fields to update',
+      details: 'Send at least one of: name, email, companyId'
+    })
+  }
 
   try {
     const updatedContact = await prisma.contact.update({
       where: { id },
       data: {
-        ...rest,
         ...(companyId === undefined
           ? {}
           : companyId === null
             ? { company: { disconnect: true } }
-            : { company: { connect: { id: Number(companyId) } } })
+            : { company: { connect: { id: Number(companyId) } } }),
+        ...data
       }
     })
 

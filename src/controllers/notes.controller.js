@@ -54,18 +54,23 @@ export const createNote = async (req, res) => {
 export const updateNoteById = async (req, res) => {
   const id = Number(req.params.id)
   const { applicationId, ...rest } = req.body
+  const data = { ...rest }
+
+  if (applicationId !== undefined && applicationId !== null) {
+    data.application = { connect: { id: Number(applicationId) } }
+  }
+
+  if (!Object.keys(data).length) {
+    return res.status(400).json({
+      error: 'No fields to update',
+      details: 'Send at least one of: applicationId, content'
+    })
+  }
 
   try {
     const updatedNote = await prisma.note.update({
       where: { id },
-      data: {
-        ...rest,
-        ...(applicationId === undefined
-          ? {}
-          : applicationId === null
-            ? {}
-            : { application: { connect: { id: Number(applicationId) } } })
-      }
+      data
     })
 
     return res.status(200).json(updatedNote)
