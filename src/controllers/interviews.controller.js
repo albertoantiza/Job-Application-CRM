@@ -28,10 +28,12 @@ export const createInterview = async (req, res) => {
   try {
     const newInterview = await prisma.interview.create({
       data: {
-        applicationId,
         date: new Date(date),
         stage,
-        notes: notes || null
+        notes: notes || null,
+        application: {
+          connect: { id: Number(applicationId) }
+        }
       }
     })
 
@@ -53,14 +55,20 @@ export const createInterview = async (req, res) => {
 
 export const updateInterviewById = async (req, res) => {
   const id = Number(req.params.id)
+  const { applicationId, date, notes, ...rest } = req.body
 
   try {
     const updatedInterview = await prisma.interview.update({
       where: { id },
       data: {
-        ...req.body,
-        date: req.body.date ? new Date(req.body.date) : undefined,
-        notes: req.body.notes ?? undefined
+        ...rest,
+        ...(date === undefined ? {} : { date: new Date(date) }),
+        ...(notes === undefined ? {} : { notes }),
+        ...(applicationId === undefined
+          ? {}
+          : applicationId === null
+            ? {}
+            : { application: { connect: { id: Number(applicationId) } } })
       }
     })
 

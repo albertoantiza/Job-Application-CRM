@@ -67,9 +67,15 @@ export const createApplication = async (req, res) => {
   try {
     const newApplication = await prisma.application.create({
       data: {
-        companyId: companyId ?? null,
         role,
-        status: status || 'applied'
+        status: status || 'applied',
+        ...(companyId
+          ? {
+              company: {
+                connect: { id: Number(companyId) }
+              }
+            }
+          : {})
       }
     })
 
@@ -88,13 +94,18 @@ export const createApplication = async (req, res) => {
 
 export const updateApplicationById = async (req, res) => {
   const id = Number(req.params.id)
+  const { companyId, ...rest } = req.body
 
   try {
     const updatedApplication = await prisma.application.update({
       where: { id },
       data: {
-        ...req.body,
-        companyId: req.body.companyId ?? undefined
+        ...rest,
+        ...(companyId === undefined
+          ? {}
+          : companyId === null
+            ? { company: { disconnect: true } }
+            : { company: { connect: { id: Number(companyId) } } })
       }
     })
 

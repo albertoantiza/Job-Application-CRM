@@ -46,7 +46,13 @@ export const createContact = async (req, res) => {
       data: {
         name,
         email,
-        companyId: companyId || null
+        ...(companyId
+          ? {
+              company: {
+                connect: { id: Number(companyId) }
+              }
+            }
+          : {})
       }
     })
 
@@ -68,12 +74,18 @@ export const createContact = async (req, res) => {
 
 export const updateContactById = async (req, res) => {
   const id = Number(req.params.id)
+  const { companyId, ...rest } = req.body
 
   try {
     const updatedContact = await prisma.contact.update({
       where: { id },
       data: {
-        ...req.body
+        ...rest,
+        ...(companyId === undefined
+          ? {}
+          : companyId === null
+            ? { company: { disconnect: true } }
+            : { company: { connect: { id: Number(companyId) } } })
       }
     })
 

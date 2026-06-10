@@ -28,8 +28,10 @@ export const createNote = async (req, res) => {
   try {
     const newNote = await prisma.note.create({
       data: {
-        applicationId,
-        content
+        content,
+        application: {
+          connect: { id: Number(applicationId) }
+        }
       }
     })
 
@@ -51,12 +53,18 @@ export const createNote = async (req, res) => {
 
 export const updateNoteById = async (req, res) => {
   const id = Number(req.params.id)
+  const { applicationId, ...rest } = req.body
 
   try {
     const updatedNote = await prisma.note.update({
       where: { id },
       data: {
-        ...req.body
+        ...rest,
+        ...(applicationId === undefined
+          ? {}
+          : applicationId === null
+            ? {}
+            : { application: { connect: { id: Number(applicationId) } } })
       }
     })
 
