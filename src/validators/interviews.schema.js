@@ -6,7 +6,8 @@ export const createInterviewSchema = {
     },
     date: {
       required: true,
-      type: 'string'
+      type: 'string',
+      format: 'date'
     },
     stage: {
       required: true,
@@ -33,7 +34,8 @@ export const updateInterviewSchema = {
     },
     date: {
       required: false,
-      type: 'string'
+      type: 'string',
+      format: 'date'
     },
     stage: {
       required: false,

@@ -1,5 +1,12 @@
 import ApiError from '../utils/ApiError.js'
 
+const isValidEmail = (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
+
+const isValidDate = (value) => {
+  const date = new Date(value)
+  return !Number.isNaN(date.getTime())
+}
+
 export const validateRequest = (schema) => {
   return (req, res, next) => {
     if (schema.body) {
@@ -26,6 +33,18 @@ export const validateRequest = (schema) => {
 
           if (!value.trim()) {
             return next(new ApiError(400, `${key} cannot be empty`))
+          }
+        }
+
+        if (rules.format === 'email' && value !== undefined && value !== null) {
+          if (typeof value !== 'string' || !isValidEmail(value)) {
+            return next(new ApiError(400, `${key} must be a valid email`))
+          }
+        }
+
+        if (rules.format === 'date' && value !== undefined && value !== null) {
+          if (typeof value !== 'string' || !isValidDate(value)) {
+            return next(new ApiError(400, `${key} must be a valid date`))
           }
         }
       }

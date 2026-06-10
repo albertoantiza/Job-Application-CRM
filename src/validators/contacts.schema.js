@@ -6,7 +6,8 @@ export const createContactSchema = {
     },
     email: {
       required: true,
-      type: 'string'
+      type: 'string',
+      format: 'email'
     },
     companyId: {
       required: false,
@@ -29,7 +30,8 @@ export const updateContactSchema = {
     },
     email: {
       required: false,
-      type: 'string'
+      type: 'string',
+      format: 'email'
     },
     companyId: {
       required: false,
