@@ -7,9 +7,11 @@ export const testDb = async (req, res) => {
       take: 1
     })
 
-    return res.json({
-      ok: true,
-      count: applications.length
+    return res.status(200).json({
+      data: {
+        ok: true,
+        count: applications.length
+      }
     })
   } catch (error) {
     console.error('testDb failed:', error)
