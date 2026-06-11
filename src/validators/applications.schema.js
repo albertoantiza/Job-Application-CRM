@@ -38,11 +38,4 @@ export const updateApplicationSchema = {
   }
 }
 
-export const applicationIdSchema = {
-  params: {
-    id: {
-      required: true,
-      type: 'number'
-    }
-  }
-}
+

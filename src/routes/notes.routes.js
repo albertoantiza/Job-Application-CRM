@@ -1,24 +1,11 @@
-import { Router } from 'express'
-import {
-  getNotes,
-  getNoteById,
-  createNote,
-  updateNoteById,
-  deleteNoteById
-} from '../controllers/notes.controller.js'
+import { createEntityRoutes } from './factory.js'
 import { validateRequest } from '../middlewares/validateRequest.js'
-import {
-  createNoteSchema,
-  updateNoteSchema,
-  noteIdSchema
-} from '../validators/notes.schema.js'
+import * as controller from '../controllers/notes.controller.js'
+import { createNoteSchema, updateNoteSchema } from '../validators/notes.schema.js'
+import { entityIdSchema } from '../validators/common.js'
 
-const router = Router()
-
-router.get('/', getNotes)
-router.get('/:id', validateRequest(noteIdSchema), getNoteById)
-router.post('/', validateRequest(createNoteSchema), createNote)
-router.patch('/:id', validateRequest(updateNoteSchema), updateNoteById)
-router.delete('/:id', validateRequest(noteIdSchema), deleteNoteById)
-
-export default router
+export default createEntityRoutes(validateRequest, controller, {
+  idSchema: entityIdSchema,
+  createSchema: createNoteSchema,
+  updateSchema: updateNoteSchema
+})

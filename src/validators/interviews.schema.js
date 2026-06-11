@@ -48,11 +48,4 @@ export const updateInterviewSchema = {
   }
 }
 
-export const interviewIdSchema = {
-  params: {
-    id: {
-      required: true,
-      type: 'number'
-    }
-  }
-}
+

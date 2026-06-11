@@ -30,11 +30,4 @@ export const updateNoteSchema = {
   }
 }
 
-export const noteIdSchema = {
-  params: {
-    id: {
-      required: true,
-      type: 'number'
-    }
-  }
-}
+

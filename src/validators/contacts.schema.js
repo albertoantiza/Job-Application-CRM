@@ -40,11 +40,4 @@ export const updateContactSchema = {
   }
 }
 
-export const contactIdSchema = {
-  params: {
-    id: {
-      required: true,
-      type: 'number'
-    }
-  }
-}
+

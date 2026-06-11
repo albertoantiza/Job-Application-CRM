@@ -38,11 +38,4 @@ export const updateCompanySchema = {
   }
 }
 
-export const companyIdSchema = {
-  params: {
-    id: {
-      required: true,
-      type: 'number'
-    }
-  }
-}
+
