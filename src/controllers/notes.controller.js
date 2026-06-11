@@ -1,11 +1,12 @@
 import prisma from '../config/prisma.js'
+import { isPrismaError, prismaConflictMessage, prismaNotFound } from '../utils/prismaError.js'
 
 export const getNotes = async (req, res) => {
   const notes = await prisma.note.findMany({
     orderBy: { id: 'asc' }
   })
 
-  return res.status(200).json(notes)
+  return res.status(200).json({ data: notes })
 }
 
 export const getNoteById = async (req, res) => {
@@ -16,10 +17,10 @@ export const getNoteById = async (req, res) => {
   })
 
   if (!note) {
-    return res.status(404).json({ error: 'Note not found' })
+    return res.status(404).json(prismaNotFound('Note'))
   }
 
-  return res.status(200).json(note)
+  return res.status(200).json({ data: note })
 }
 
 export const createNote = async (req, res) => {
@@ -35,13 +36,10 @@ export const createNote = async (req, res) => {
       }
     })
 
-    return res.status(201).json(newNote)
+    return res.status(201).json({ data: newNote })
   } catch (error) {
-    if (error.code === 'P2003') {
-      return res.status(400).json({
-        error: 'Invalid applicationId',
-        details: 'The related application does not exist'
-      })
+    if (isPrismaError(error, 'P2003')) {
+      return res.status(400).json(prismaConflictMessage('applicationId', 'application'))
     }
 
     return res.status(400).json({
@@ -73,17 +71,14 @@ export const updateNoteById = async (req, res) => {
       data
     })
 
-    return res.status(200).json(updatedNote)
+    return res.status(200).json({ data: updatedNote })
   } catch (error) {
-    if (error.code === 'P2025') {
-      return res.status(404).json({ error: 'Note not found' })
+    if (isPrismaError(error, 'P2025')) {
+      return res.status(404).json(prismaNotFound('Note'))
     }
 
-    if (error.code === 'P2003') {
-      return res.status(400).json({
-        error: 'Invalid applicationId',
-        details: 'The related application does not exist'
-      })
+    if (isPrismaError(error, 'P2003')) {
+      return res.status(400).json(prismaConflictMessage('applicationId', 'application'))
     }
 
     throw error
@@ -103,8 +98,8 @@ export const deleteNoteById = async (req, res) => {
       data: deletedNote
     })
   } catch (error) {
-    if (error.code === 'P2025') {
-      return res.status(404).json({ error: 'Note not found' })
+    if (isPrismaError(error, 'P2025')) {
+      return res.status(404).json(prismaNotFound('Note'))
     }
 
     throw error

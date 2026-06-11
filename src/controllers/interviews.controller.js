@@ -1,11 +1,12 @@
 import prisma from '../config/prisma.js'
+import { isPrismaError, prismaConflictMessage, prismaNotFound } from '../utils/prismaError.js'
 
 export const getInterviews = async (req, res) => {
   const interviews = await prisma.interview.findMany({
     orderBy: { id: 'asc' }
   })
 
-  return res.status(200).json(interviews)
+  return res.status(200).json({ data: interviews })
 }
 
 export const getInterviewById = async (req, res) => {
@@ -16,10 +17,10 @@ export const getInterviewById = async (req, res) => {
   })
 
   if (!interview) {
-    return res.status(404).json({ error: 'Interview not found' })
+    return res.status(404).json(prismaNotFound('Interview'))
   }
 
-  return res.status(200).json(interview)
+  return res.status(200).json({ data: interview })
 }
 
 export const createInterview = async (req, res) => {
@@ -37,13 +38,10 @@ export const createInterview = async (req, res) => {
       }
     })
 
-    return res.status(201).json(newInterview)
+    return res.status(201).json({ data: newInterview })
   } catch (error) {
-    if (error.code === 'P2003') {
-      return res.status(400).json({
-        error: 'Invalid applicationId',
-        details: 'The related application does not exist'
-      })
+    if (isPrismaError(error, 'P2003')) {
+      return res.status(400).json(prismaConflictMessage('applicationId', 'application'))
     }
 
     return res.status(400).json({
@@ -77,17 +75,14 @@ export const updateInterviewById = async (req, res) => {
       data
     })
 
-    return res.status(200).json(updatedInterview)
+    return res.status(200).json({ data: updatedInterview })
   } catch (error) {
-    if (error.code === 'P2025') {
-      return res.status(404).json({ error: 'Interview not found' })
+    if (isPrismaError(error, 'P2025')) {
+      return res.status(404).json(prismaNotFound('Interview'))
     }
 
-    if (error.code === 'P2003') {
-      return res.status(400).json({
-        error: 'Invalid applicationId',
-        details: 'The related application does not exist'
-      })
+    if (isPrismaError(error, 'P2003')) {
+      return res.status(400).json(prismaConflictMessage('applicationId', 'application'))
     }
 
     throw error
@@ -107,8 +102,8 @@ export const deleteInterviewById = async (req, res) => {
       data: deletedInterview
     })
   } catch (error) {
-    if (error.code === 'P2025') {
-      return res.status(404).json({ error: 'Interview not found' })
+    if (isPrismaError(error, 'P2025')) {
+      return res.status(404).json(prismaNotFound('Interview'))
     }
 
     throw error

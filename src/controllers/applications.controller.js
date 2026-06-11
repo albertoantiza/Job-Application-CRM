@@ -1,4 +1,5 @@
 import prisma from '../config/prisma.js'
+import { isPrismaError, prismaConflictMessage, prismaNotFound } from '../utils/prismaError.js'
 
 export const testDb = async (req, res) => {
   try {
@@ -44,7 +45,7 @@ export const getApplications = async (req, res) => {
     orderBy: { id: 'asc' }
   })
 
-  return res.status(200).json(applications)
+  return res.status(200).json({ data: applications })
 }
 
 export const getApplicationById = async (req, res) => {
@@ -55,10 +56,10 @@ export const getApplicationById = async (req, res) => {
   })
 
   if (!application) {
-    return res.status(404).json({ error: 'Application not found' })
+    return res.status(404).json(prismaNotFound('Application'))
   }
 
-  return res.status(200).json(application)
+    return res.status(200).json({ data: application })
 }
 
 export const createApplication = async (req, res) => {
@@ -79,13 +80,10 @@ export const createApplication = async (req, res) => {
       }
     })
 
-    return res.status(201).json(newApplication)
+    return res.status(201).json({ data: newApplication })
   } catch (error) {
-    if (error.code === 'P2003') {
-      return res.status(400).json({
-        error: 'Invalid companyId',
-        details: 'The related company does not exist'
-      })
+    if (isPrismaError(error, 'P2003')) {
+      return res.status(400).json(prismaConflictMessage('companyId', 'company'))
     }
 
     throw error
@@ -104,10 +102,10 @@ export const updateApplicationById = async (req, res) => {
   }
 
   if (!Object.keys(data).length) {
-    return res.status(400).json({
-      error: 'No fields to update',
-      details: 'Send at least one of: companyId, role, status'
-    })
+      return res.status(400).json({
+        error: 'No fields to update',
+        details: 'Send at least one of: companyId, role, status'
+      })
   }
 
   try {
@@ -116,17 +114,14 @@ export const updateApplicationById = async (req, res) => {
       data
     })
 
-    return res.status(200).json(updatedApplication)
+    return res.status(200).json({ data: updatedApplication })
   } catch (error) {
-    if (error.code === 'P2025') {
-      return res.status(404).json({ error: 'Application not found' })
+    if (isPrismaError(error, 'P2025')) {
+      return res.status(404).json(prismaNotFound('Application'))
     }
 
-    if (error.code === 'P2003') {
-      return res.status(400).json({
-        error: 'Invalid companyId',
-        details: 'The related company does not exist'
-      })
+    if (isPrismaError(error, 'P2003')) {
+      return res.status(400).json(prismaConflictMessage('companyId', 'company'))
     }
 
     throw error
@@ -146,8 +141,8 @@ export const deleteApplicationById = async (req, res) => {
       data: deletedApplication
     })
   } catch (error) {
-    if (error.code === 'P2025') {
-      return res.status(404).json({ error: 'Application not found' })
+    if (isPrismaError(error, 'P2025')) {
+      return res.status(404).json(prismaNotFound('Application'))
     }
 
     throw error

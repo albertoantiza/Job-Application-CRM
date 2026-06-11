@@ -1,4 +1,5 @@
 import prisma from '../config/prisma.js'
+import { isPrismaError, prismaConflictMessage, prismaNotFound } from '../utils/prismaError.js'
 
 export const getContacts = async (req, res) => {
   const { search, companyId } = req.query
@@ -21,7 +22,7 @@ export const getContacts = async (req, res) => {
     orderBy: { id: 'asc' }
   })
 
-  return res.status(200).json(contacts)
+  return res.status(200).json({ data: contacts })
 }
 
 export const getContactById = async (req, res) => {
@@ -32,10 +33,10 @@ export const getContactById = async (req, res) => {
   })
 
   if (!contact) {
-    return res.status(404).json({ error: 'Contact not found' })
+    return res.status(404).json(prismaNotFound('Contact'))
   }
 
-  return res.status(200).json(contact)
+  return res.status(200).json({ data: contact })
 }
 
 export const createContact = async (req, res) => {
@@ -56,13 +57,10 @@ export const createContact = async (req, res) => {
       }
     })
 
-    return res.status(201).json(newContact)
+    return res.status(201).json({ data: newContact })
   } catch (error) {
-    if (error.code === 'P2003') {
-      return res.status(400).json({
-        error: 'Invalid companyId',
-        details: 'The related company does not exist'
-      })
+    if (isPrismaError(error, 'P2003')) {
+      return res.status(400).json(prismaConflictMessage('companyId', 'company'))
     }
 
     return res.status(400).json({
@@ -97,10 +95,10 @@ export const updateContactById = async (req, res) => {
       }
     })
 
-    return res.status(200).json(updatedContact)
+    return res.status(200).json({ data: updatedContact })
   } catch (error) {
-    if (error.code === 'P2025') {
-      return res.status(404).json({ error: 'Contact not found' })
+    if (isPrismaError(error, 'P2025')) {
+      return res.status(404).json(prismaNotFound('Contact'))
     }
 
     throw error
@@ -120,8 +118,8 @@ export const deleteContactById = async (req, res) => {
       data: deletedContact
     })
   } catch (error) {
-    if (error.code === 'P2025') {
-      return res.status(404).json({ error: 'Contact not found' })
+    if (isPrismaError(error, 'P2025')) {
+      return res.status(404).json(prismaNotFound('Contact'))
     }
 
     throw error

@@ -1,4 +1,5 @@
 import prisma from '../config/prisma.js'
+import { isPrismaError, prismaNotFound } from '../utils/prismaError.js'
 
 export const getCompanies = async (req, res) => {
   const { search, location } = req.query
@@ -22,7 +23,7 @@ export const getCompanies = async (req, res) => {
     orderBy: { id: 'asc' }
   })
 
-  return res.status(200).json(companies)
+  return res.status(200).json({ data: companies })
 }
 
 export const getCompanyById = async (req, res) => {
@@ -33,10 +34,10 @@ export const getCompanyById = async (req, res) => {
   })
 
   if (!company) {
-    return res.status(404).json({ error: 'Company not found' })
+    return res.status(404).json(prismaNotFound('Company'))
   }
 
-  return res.status(200).json(company)
+  return res.status(200).json({ data: company })
 }
 
 export const createCompany = async (req, res) => {
@@ -51,7 +52,7 @@ export const createCompany = async (req, res) => {
       }
     })
 
-    return res.status(201).json(newCompany)
+    return res.status(201).json({ data: newCompany })
   } catch (error) {
     return res.status(400).json({
       error: 'Could not create company',
@@ -82,10 +83,10 @@ export const updateCompanyById = async (req, res) => {
       data
     })
 
-    return res.status(200).json(updatedCompany)
+    return res.status(200).json({ data: updatedCompany })
   } catch (error) {
-    if (error.code === 'P2025') {
-      return res.status(404).json({ error: 'Company not found' })
+    if (isPrismaError(error, 'P2025')) {
+      return res.status(404).json(prismaNotFound('Company'))
     }
 
     throw error
@@ -105,8 +106,8 @@ export const deleteCompanyById = async (req, res) => {
       data: deletedCompany
     })
   } catch (error) {
-    if (error.code === 'P2025') {
-      return res.status(404).json({ error: 'Company not found' })
+    if (isPrismaError(error, 'P2025')) {
+      return res.status(404).json(prismaNotFound('Company'))
     }
 
     throw error
