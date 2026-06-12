@@ -1,6 +1,6 @@
 import prisma from '../config/prisma.js'
 import { isPrismaError, throwPrismaConflict, throwPrismaNotFound } from '../utils/prismaError.js'
-import { BadRequestError } from '../utils/errors.js'
+import { BadRequestError, InternalError } from '../utils/errors.js'
 import { createEntityController } from './factory.js'
 
 export const testDb = async (req, res) => {
@@ -8,9 +8,7 @@ export const testDb = async (req, res) => {
     const applications = await prisma.application.findMany({ take: 1 })
     return res.status(200).json({ data: { ok: true, count: applications.length } })
   } catch (error) {
-    console.error('testDb failed:', error)
-    return res.status(500).json({
-      error: 'Database connection failed',
+    throw new InternalError('Database connection failed', {
       details: error.message
     })
   }

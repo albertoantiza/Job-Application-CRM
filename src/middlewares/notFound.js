@@ -1,5 +1,5 @@
-export const notFound = (req, res) => {
-  return res.status(404).json({
-    error: 'Route not found'
-  })
+import { NotFoundError } from '../utils/errors.js'
+
+export const notFound = (req, res, next) => {
+  next(new NotFoundError('Route not found'))
 }

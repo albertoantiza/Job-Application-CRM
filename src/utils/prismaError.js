@@ -1,8 +1,8 @@
 import { NotFoundError, BadRequestError } from './errors.js'
 
 export const prismaConflictMessage = (field, relationLabel) => ({
-  error: `Invalid ${field}`,
-  details: `The related ${relationLabel} does not exist`
+  error: `Related ${relationLabel} not found`,
+  details: `The provided ${field} does not reference an existing ${relationLabel}`
 })
 
 export const prismaNotFound = (entityName) => ({
@@ -18,7 +18,7 @@ export const throwPrismaNotFound = (entityName) => {
 }
 
 export const throwPrismaConflict = (field, relationLabel) => {
-  throw new BadRequestError(`Invalid ${field}`, {
-    details: `The related ${relationLabel} does not exist`
+  throw new BadRequestError(`Related ${relationLabel} not found`, {
+    details: `The provided ${field} does not reference an existing ${relationLabel}`
   })
 }
