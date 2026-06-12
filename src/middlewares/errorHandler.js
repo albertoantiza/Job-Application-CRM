@@ -6,7 +6,9 @@ export const errorHandler = (err, req, res, _next) => {
 
   if (err instanceof ApiError) {
     const payload = {
-      error: err.message
+      error: err.message,
+      type: err.type || 'error',
+      status: err.statusCode
     }
 
     if (err.field) {
@@ -27,6 +29,8 @@ export const errorHandler = (err, req, res, _next) => {
   logger.error(err)
 
   return res.status(500).json({
-    error: 'Internal Server Error'
+    error: 'Internal Server Error',
+    type: 'server',
+    status: 500
   })
 }
