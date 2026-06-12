@@ -1,6 +1,7 @@
 import prisma from '../config/prisma.js'
 import { isPrismaError, throwPrismaNotFound } from '../utils/prismaError.js'
 import { BadRequestError } from '../utils/errors.js'
+import { logger } from '../utils/logger.js'
 import { createEntityController } from './factory.js'
 
 const ctrl = createEntityController('company', 'Company', {
@@ -21,6 +22,7 @@ const ctrl = createEntityController('company', 'Company', {
       where: Object.keys(where).length ? where : undefined,
       orderBy: { id: 'asc' }
     })
+    logger.info(`Company list returned ${companies.length} results`)
     return res.status(200).json({ data: companies })
   },
   async create(req, res) {
@@ -29,6 +31,7 @@ const ctrl = createEntityController('company', 'Company', {
       const newCompany = await prisma.company.create({
         data: { name, website: website || null, location: location || null }
       })
+      logger.info(`Company ${newCompany.id} created — name="${name}"`)
       return res.status(201).json({ data: newCompany })
     } catch (error) {
       throw new BadRequestError('Could not create company', {
@@ -50,9 +53,11 @@ const ctrl = createEntityController('company', 'Company', {
     }
     try {
       const updatedCompany = await prisma.company.update({ where: { id }, data })
+      logger.info(`Company ${id} updated`)
       return res.status(200).json({ data: updatedCompany })
     } catch (error) {
       if (isPrismaError(error, 'P2025')) {
+        logger.warn(`Company ${id} not found — update`)
         throwPrismaNotFound('Company')
       }
       throw error

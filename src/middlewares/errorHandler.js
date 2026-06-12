@@ -21,6 +21,8 @@ export const errorHandler = (err, req, res, _next) => {
 
     if (err.statusCode >= 500) {
       logger.error(err)
+    } else {
+      logger.warn(`${req.method} ${req.originalUrl} -> ${err.statusCode} — ${err.message}`)
     }
 
     return res.status(err.statusCode).json(payload)

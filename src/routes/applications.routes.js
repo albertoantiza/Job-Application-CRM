@@ -1,4 +1,5 @@
 import { Router } from 'express'
+import { logger } from '../utils/logger.js'
 import { validateRequest } from '../middlewares/validateRequest.js'
 import * as controller from '../controllers/applications.controller.js'
 import { createApplicationSchema, updateApplicationSchema } from '../validators/applications.schema.js'
@@ -6,11 +7,7 @@ import { entityIdSchema } from '../validators/common.js'
 
 const router = Router()
 
-console.log('Applications routes loaded')
-console.log(
-  'Applications router stack:',
-  router.stack.map((layer) => layer.route?.path)
-)
+logger.info('Applications routes loaded')
 
 router.get('/test-db', controller.testDb)
 router.get('/', controller.getAll)

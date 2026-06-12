@@ -1,6 +1,7 @@
 import prisma from '../config/prisma.js'
 import { isPrismaError, throwPrismaConflict, throwPrismaNotFound } from '../utils/prismaError.js'
 import { BadRequestError } from '../utils/errors.js'
+import { logger } from '../utils/logger.js'
 import { createEntityController } from './factory.js'
 
 const ctrl = createEntityController('contact', 'Contact', {
@@ -18,6 +19,7 @@ const ctrl = createEntityController('contact', 'Contact', {
       where: Object.keys(where).length ? where : undefined,
       orderBy: { id: 'asc' }
     })
+    logger.info(`Contact list returned ${contacts.length} results`)
     return res.status(200).json({ data: contacts })
   },
   async create(req, res) {
@@ -30,6 +32,7 @@ const ctrl = createEntityController('contact', 'Contact', {
           ...(companyId ? { company: { connect: { id: Number(companyId) } } } : {})
         }
       })
+      logger.info(`Contact ${newContact.id} created — name="${name}"`)
       return res.status(201).json({ data: newContact })
     } catch (error) {
       if (isPrismaError(error, 'P2003')) {
@@ -61,9 +64,11 @@ const ctrl = createEntityController('contact', 'Contact', {
           ...data
         }
       })
+      logger.info(`Contact ${id} updated`)
       return res.status(200).json({ data: updatedContact })
     } catch (error) {
       if (isPrismaError(error, 'P2025')) {
+        logger.warn(`Contact ${id} not found — update`)
         throwPrismaNotFound('Contact')
       }
       throw error

@@ -1,4 +1,5 @@
 import { Router } from 'express'
+import { logger } from '../utils/logger.js'
 import applicationsRoutes from './applications.routes.js'
 import contactsRoutes from './contacts.routes.js'
 import companiesRoutes from './companies.routes.js'
@@ -7,7 +8,7 @@ import notesRoutes from './notes.routes.js'
 
 const router = Router()
 
-console.log('Registering routes...')
+logger.info('Registering routes...')
 
 router.use('/applications', applicationsRoutes)
 router.use('/contacts', contactsRoutes)

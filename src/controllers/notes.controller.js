@@ -1,6 +1,7 @@
 import prisma from '../config/prisma.js'
 import { isPrismaError, throwPrismaConflict, throwPrismaNotFound } from '../utils/prismaError.js'
 import { BadRequestError } from '../utils/errors.js'
+import { logger } from '../utils/logger.js'
 import { createEntityController } from './factory.js'
 
 const ctrl = createEntityController('note', 'Note', {
@@ -13,6 +14,7 @@ const ctrl = createEntityController('note', 'Note', {
           application: { connect: { id: Number(applicationId) } }
         }
       })
+      logger.info(`Note ${newNote.id} created`)
       return res.status(201).json({ data: newNote })
     } catch (error) {
       if (isPrismaError(error, 'P2003')) {
@@ -37,9 +39,11 @@ const ctrl = createEntityController('note', 'Note', {
     }
     try {
       const updatedNote = await prisma.note.update({ where: { id }, data })
+      logger.info(`Note ${id} updated`)
       return res.status(200).json({ data: updatedNote })
     } catch (error) {
       if (isPrismaError(error, 'P2025')) {
+        logger.warn(`Note ${id} not found — update`)
         throwPrismaNotFound('Note')
       }
       if (isPrismaError(error, 'P2003')) {

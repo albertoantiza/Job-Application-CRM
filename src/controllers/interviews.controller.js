@@ -1,6 +1,7 @@
 import prisma from '../config/prisma.js'
 import { isPrismaError, throwPrismaConflict, throwPrismaNotFound } from '../utils/prismaError.js'
 import { BadRequestError } from '../utils/errors.js'
+import { logger } from '../utils/logger.js'
 import { createEntityController } from './factory.js'
 
 const ctrl = createEntityController('interview', 'Interview', {
@@ -15,6 +16,7 @@ const ctrl = createEntityController('interview', 'Interview', {
           application: { connect: { id: Number(applicationId) } }
         }
       })
+      logger.info(`Interview ${newInterview.id} created — stage="${stage}"`)
       return res.status(201).json({ data: newInterview })
     } catch (error) {
       if (isPrismaError(error, 'P2003')) {
@@ -41,9 +43,11 @@ const ctrl = createEntityController('interview', 'Interview', {
     }
     try {
       const updatedInterview = await prisma.interview.update({ where: { id }, data })
+      logger.info(`Interview ${id} updated`)
       return res.status(200).json({ data: updatedInterview })
     } catch (error) {
       if (isPrismaError(error, 'P2025')) {
+        logger.warn(`Interview ${id} not found — update`)
         throwPrismaNotFound('Interview')
       }
       if (isPrismaError(error, 'P2003')) {

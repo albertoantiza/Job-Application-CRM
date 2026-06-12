@@ -1,6 +1,7 @@
 import prisma from '../config/prisma.js'
 import { isPrismaError, throwPrismaConflict, throwPrismaNotFound } from '../utils/prismaError.js'
 import { BadRequestError, InternalError } from '../utils/errors.js'
+import { logger } from '../utils/logger.js'
 import { createEntityController } from './factory.js'
 
 export const testDb = async (req, res) => {
@@ -30,6 +31,7 @@ const ctrl = createEntityController('application', 'Application', {
       where: Object.keys(where).length ? where : undefined,
       orderBy: { id: 'asc' }
     })
+    logger.info(`Application list returned ${applications.length} results`)
     return res.status(200).json({ data: applications })
   },
   async create(req, res) {
@@ -42,6 +44,7 @@ const ctrl = createEntityController('application', 'Application', {
           ...(companyId ? { company: { connect: { id: Number(companyId) } } } : {})
         }
       })
+      logger.info(`Application ${newApplication.id} created — role="${role}"`)
       return res.status(201).json({ data: newApplication })
     } catch (error) {
       if (isPrismaError(error, 'P2003')) {
@@ -66,9 +69,11 @@ const ctrl = createEntityController('application', 'Application', {
     }
     try {
       const updatedApplication = await prisma.application.update({ where: { id }, data })
+      logger.info(`Application ${id} updated`)
       return res.status(200).json({ data: updatedApplication })
     } catch (error) {
       if (isPrismaError(error, 'P2025')) {
+        logger.warn(`Application ${id} not found — update`)
         throwPrismaNotFound('Application')
       }
       if (isPrismaError(error, 'P2003')) {
