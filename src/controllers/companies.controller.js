@@ -1,5 +1,6 @@
 import prisma from '../config/prisma.js'
-import { isPrismaError, prismaNotFound } from '../utils/prismaError.js'
+import { isPrismaError, throwPrismaNotFound } from '../utils/prismaError.js'
+import { BadRequestError } from '../utils/errors.js'
 import { createEntityController } from './factory.js'
 
 const ctrl = createEntityController('company', 'Company', {
@@ -30,8 +31,7 @@ const ctrl = createEntityController('company', 'Company', {
       })
       return res.status(201).json({ data: newCompany })
     } catch (error) {
-      return res.status(400).json({
-        error: 'Could not create company',
+      throw new BadRequestError('Could not create company', {
         details: error.message
       })
     }
@@ -44,8 +44,7 @@ const ctrl = createEntityController('company', 'Company', {
     if (website !== undefined) data.website = website
     if (location !== undefined) data.location = location
     if (!Object.keys(data).length) {
-      return res.status(400).json({
-        error: 'No fields to update',
+      throw new BadRequestError('No fields to update', {
         details: 'Send at least one of: name, website, location'
       })
     }
@@ -54,7 +53,7 @@ const ctrl = createEntityController('company', 'Company', {
       return res.status(200).json({ data: updatedCompany })
     } catch (error) {
       if (isPrismaError(error, 'P2025')) {
-        return res.status(404).json(prismaNotFound('Company'))
+        throwPrismaNotFound('Company')
       }
       throw error
     }

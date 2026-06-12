@@ -1,5 +1,6 @@
 import prisma from '../config/prisma.js'
-import { isPrismaError, prismaConflictMessage, prismaNotFound } from '../utils/prismaError.js'
+import { isPrismaError, throwPrismaConflict, throwPrismaNotFound } from '../utils/prismaError.js'
+import { BadRequestError } from '../utils/errors.js'
 import { createEntityController } from './factory.js'
 
 const ctrl = createEntityController('contact', 'Contact', {
@@ -32,10 +33,9 @@ const ctrl = createEntityController('contact', 'Contact', {
       return res.status(201).json({ data: newContact })
     } catch (error) {
       if (isPrismaError(error, 'P2003')) {
-        return res.status(400).json(prismaConflictMessage('companyId', 'company'))
+        throwPrismaConflict('companyId', 'company')
       }
-      return res.status(400).json({
-        error: 'Could not create contact',
+      throw new BadRequestError('Could not create contact', {
         details: error.message
       })
     }
@@ -45,8 +45,7 @@ const ctrl = createEntityController('contact', 'Contact', {
     const { companyId, ...rest } = req.body
     const data = { ...rest }
     if (companyId === undefined && !Object.keys(data).length) {
-      return res.status(400).json({
-        error: 'No fields to update',
+      throw new BadRequestError('No fields to update', {
         details: 'Send at least one of: name, email, companyId'
       })
     }
@@ -65,7 +64,7 @@ const ctrl = createEntityController('contact', 'Contact', {
       return res.status(200).json({ data: updatedContact })
     } catch (error) {
       if (isPrismaError(error, 'P2025')) {
-        return res.status(404).json(prismaNotFound('Contact'))
+        throwPrismaNotFound('Contact')
       }
       throw error
     }

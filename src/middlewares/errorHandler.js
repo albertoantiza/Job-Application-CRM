@@ -17,6 +17,10 @@ export const errorHandler = (err, req, res, _next) => {
       payload.details = err.details
     }
 
+    if (err.statusCode >= 500) {
+      logger.error(err)
+    }
+
     return res.status(err.statusCode).json(payload)
   }
 

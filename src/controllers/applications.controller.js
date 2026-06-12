@@ -1,5 +1,6 @@
 import prisma from '../config/prisma.js'
-import { isPrismaError, prismaConflictMessage, prismaNotFound } from '../utils/prismaError.js'
+import { isPrismaError, throwPrismaConflict, throwPrismaNotFound } from '../utils/prismaError.js'
+import { BadRequestError } from '../utils/errors.js'
 import { createEntityController } from './factory.js'
 
 export const testDb = async (req, res) => {
@@ -46,7 +47,7 @@ const ctrl = createEntityController('application', 'Application', {
       return res.status(201).json({ data: newApplication })
     } catch (error) {
       if (isPrismaError(error, 'P2003')) {
-        return res.status(400).json(prismaConflictMessage('companyId', 'company'))
+        throwPrismaConflict('companyId', 'company')
       }
       throw error
     }
@@ -61,8 +62,7 @@ const ctrl = createEntityController('application', 'Application', {
       data.company = { disconnect: true }
     }
     if (!Object.keys(data).length) {
-      return res.status(400).json({
-        error: 'No fields to update',
+      throw new BadRequestError('No fields to update', {
         details: 'Send at least one of: companyId, role, status'
       })
     }
@@ -71,10 +71,10 @@ const ctrl = createEntityController('application', 'Application', {
       return res.status(200).json({ data: updatedApplication })
     } catch (error) {
       if (isPrismaError(error, 'P2025')) {
-        return res.status(404).json(prismaNotFound('Application'))
+        throwPrismaNotFound('Application')
       }
       if (isPrismaError(error, 'P2003')) {
-        return res.status(400).json(prismaConflictMessage('companyId', 'company'))
+        throwPrismaConflict('companyId', 'company')
       }
       throw error
     }

@@ -1,4 +1,4 @@
-import ApiError from '../utils/ApiError.js'
+import { ValidationError } from '../utils/errors.js'
 
 const isValidEmail = (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
 
@@ -10,7 +10,7 @@ const isValidDate = (value) => {
 export const validateRequest = (schema) => {
   return (req, res, next) => {
     const fail = (field, message, details) => {
-      return next(new ApiError(400, message, { field, details }))
+      return next(new ValidationError(message, { field, details }))
     }
 
     if (schema.body) {

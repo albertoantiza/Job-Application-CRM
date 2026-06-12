@@ -1,5 +1,6 @@
 import prisma from '../config/prisma.js'
-import { isPrismaError, prismaConflictMessage, prismaNotFound } from '../utils/prismaError.js'
+import { isPrismaError, throwPrismaConflict, throwPrismaNotFound } from '../utils/prismaError.js'
+import { BadRequestError } from '../utils/errors.js'
 import { createEntityController } from './factory.js'
 
 const ctrl = createEntityController('note', 'Note', {
@@ -15,10 +16,9 @@ const ctrl = createEntityController('note', 'Note', {
       return res.status(201).json({ data: newNote })
     } catch (error) {
       if (isPrismaError(error, 'P2003')) {
-        return res.status(400).json(prismaConflictMessage('applicationId', 'application'))
+        throwPrismaConflict('applicationId', 'application')
       }
-      return res.status(400).json({
-        error: 'Could not create note',
+      throw new BadRequestError('Could not create note', {
         details: error.message
       })
     }
@@ -31,8 +31,7 @@ const ctrl = createEntityController('note', 'Note', {
       data.application = { connect: { id: Number(applicationId) } }
     }
     if (!Object.keys(data).length) {
-      return res.status(400).json({
-        error: 'No fields to update',
+      throw new BadRequestError('No fields to update', {
         details: 'Send at least one of: applicationId, content'
       })
     }
@@ -41,10 +40,10 @@ const ctrl = createEntityController('note', 'Note', {
       return res.status(200).json({ data: updatedNote })
     } catch (error) {
       if (isPrismaError(error, 'P2025')) {
-        return res.status(404).json(prismaNotFound('Note'))
+        throwPrismaNotFound('Note')
       }
       if (isPrismaError(error, 'P2003')) {
-        return res.status(400).json(prismaConflictMessage('applicationId', 'application'))
+        throwPrismaConflict('applicationId', 'application')
       }
       throw error
     }

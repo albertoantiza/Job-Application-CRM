@@ -1,5 +1,5 @@
 import prisma from '../config/prisma.js'
-import { isPrismaError, prismaNotFound } from '../utils/prismaError.js'
+import { isPrismaError, throwPrismaNotFound } from '../utils/prismaError.js'
 
 export const createEntityController = (modelName, entityName, overrides = {}) => {
   const prismaModel = prisma[modelName]
@@ -15,7 +15,7 @@ export const createEntityController = (modelName, entityName, overrides = {}) =>
     const id = Number(req.params.id)
     const entity = await prismaModel.findUnique({ where: { id } })
     if (!entity) {
-      return res.status(404).json(prismaNotFound(entityName))
+      throwPrismaNotFound(entityName)
     }
     return res.status(200).json({ data: entity })
   }
@@ -30,7 +30,7 @@ export const createEntityController = (modelName, entityName, overrides = {}) =>
       })
     } catch (error) {
       if (isPrismaError(error, 'P2025')) {
-        return res.status(404).json(prismaNotFound(entityName))
+        throwPrismaNotFound(entityName)
       }
       throw error
     }
