@@ -1,6 +1,7 @@
 import prisma from '../config/prisma.js'
 import { isPrismaError, throwPrismaConflict, throwPrismaNotFound } from '../utils/prismaError.js'
 import { BadRequestError, InternalError } from '../utils/errors.js'
+import { parsePagination, parseSort, buildPaginatedResponse } from '../utils/pagination.js'
 import { logger } from '../utils/logger.js'
 import { createEntityController } from './factory.js'
 
@@ -15,6 +16,8 @@ export const testDb = async (req, res) => {
   }
 }
 
+const ALLOWED_SORT = ['id', 'role', 'status', 'companyId', 'createdAt', 'updatedAt']
+
 const ctrl = createEntityController('application', 'Application', {
   async getAll(req, res) {
     const { search, status, companyId } = req.query
@@ -27,12 +30,19 @@ const ctrl = createEntityController('application', 'Application', {
         { status: { contains: String(search), mode: 'insensitive' } }
       ]
     }
-    const applications = await prisma.application.findMany({
-      where: Object.keys(where).length ? where : undefined,
-      orderBy: { id: 'asc' }
-    })
+    const pagination = parsePagination(req.query)
+    const orderBy = parseSort(req.query, ALLOWED_SORT, { id: 'asc' })
+    const [applications, total] = await Promise.all([
+      prisma.application.findMany({
+        where: Object.keys(where).length ? where : undefined,
+        ...pagination,
+        orderBy
+      }),
+      prisma.application.count({ where: Object.keys(where).length ? where : undefined })
+    ])
+    const response = buildPaginatedResponse(applications, pagination, total)
     logger.info(`Application list returned ${applications.length} results`)
-    return res.status(200).json({ data: applications })
+    return res.status(200).json(response)
   },
   async create(req, res) {
     const { companyId, role, status } = req.body

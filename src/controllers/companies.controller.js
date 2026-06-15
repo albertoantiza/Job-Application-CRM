@@ -1,8 +1,11 @@
 import prisma from '../config/prisma.js'
 import { isPrismaError, throwPrismaNotFound } from '../utils/prismaError.js'
 import { BadRequestError } from '../utils/errors.js'
+import { parsePagination, parseSort, buildPaginatedResponse } from '../utils/pagination.js'
 import { logger } from '../utils/logger.js'
 import { createEntityController } from './factory.js'
+
+const ALLOWED_SORT = ['id', 'name', 'website', 'location', 'createdAt', 'updatedAt']
 
 const ctrl = createEntityController('company', 'Company', {
   async getAll(req, res) {
@@ -18,12 +21,19 @@ const ctrl = createEntityController('company', 'Company', {
     if (location) {
       where.location = { contains: String(location), mode: 'insensitive' }
     }
-    const companies = await prisma.company.findMany({
-      where: Object.keys(where).length ? where : undefined,
-      orderBy: { id: 'asc' }
-    })
+    const pagination = parsePagination(req.query)
+    const orderBy = parseSort(req.query, ALLOWED_SORT, { id: 'asc' })
+    const [companies, total] = await Promise.all([
+      prisma.company.findMany({
+        where: Object.keys(where).length ? where : undefined,
+        ...pagination,
+        orderBy
+      }),
+      prisma.company.count({ where: Object.keys(where).length ? where : undefined })
+    ])
+    const response = buildPaginatedResponse(companies, pagination, total)
     logger.info(`Company list returned ${companies.length} results`)
-    return res.status(200).json({ data: companies })
+    return res.status(200).json(response)
   },
   async create(req, res) {
     const { name, website, location } = req.body

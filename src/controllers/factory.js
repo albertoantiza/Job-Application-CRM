@@ -1,5 +1,6 @@
 import prisma from '../config/prisma.js'
 import { isPrismaError, throwPrismaNotFound } from '../utils/prismaError.js'
+import { parsePagination, parseSort, buildPaginatedResponse } from '../utils/pagination.js'
 import { logger } from '../utils/logger.js'
 
 export const createEntityController = (modelName, entityName, overrides = {}) => {
@@ -8,9 +9,15 @@ export const createEntityController = (modelName, entityName, overrides = {}) =>
   const getAll =
     overrides.getAll ||
     (async (req, res) => {
-      const entities = await prismaModel.findMany({ orderBy: { id: 'asc' } })
+      const pagination = parsePagination(req.query)
+      const orderBy = parseSort(req.query, ['id', 'createdAt', 'updatedAt'])
+      const [entities, total] = await Promise.all([
+        prismaModel.findMany({ ...pagination, orderBy }),
+        prismaModel.count()
+      ])
+      const response = buildPaginatedResponse(entities, pagination, total)
       logger.info(`${entityName} list returned ${entities.length} results`)
-      return res.status(200).json({ data: entities })
+      return res.status(200).json(response)
     })
 
   const getById = async (req, res) => {

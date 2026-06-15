@@ -1,8 +1,11 @@
 import prisma from '../config/prisma.js'
 import { isPrismaError, throwPrismaConflict, throwPrismaNotFound } from '../utils/prismaError.js'
 import { BadRequestError } from '../utils/errors.js'
+import { parsePagination, parseSort, buildPaginatedResponse } from '../utils/pagination.js'
 import { logger } from '../utils/logger.js'
 import { createEntityController } from './factory.js'
+
+const ALLOWED_SORT = ['id', 'name', 'email', 'companyId', 'createdAt', 'updatedAt']
 
 const ctrl = createEntityController('contact', 'Contact', {
   async getAll(req, res) {
@@ -15,12 +18,19 @@ const ctrl = createEntityController('contact', 'Contact', {
         { email: { contains: String(search), mode: 'insensitive' } }
       ]
     }
-    const contacts = await prisma.contact.findMany({
-      where: Object.keys(where).length ? where : undefined,
-      orderBy: { id: 'asc' }
-    })
+    const pagination = parsePagination(req.query)
+    const orderBy = parseSort(req.query, ALLOWED_SORT, { id: 'asc' })
+    const [contacts, total] = await Promise.all([
+      prisma.contact.findMany({
+        where: Object.keys(where).length ? where : undefined,
+        ...pagination,
+        orderBy
+      }),
+      prisma.contact.count({ where: Object.keys(where).length ? where : undefined })
+    ])
+    const response = buildPaginatedResponse(contacts, pagination, total)
     logger.info(`Contact list returned ${contacts.length} results`)
-    return res.status(200).json({ data: contacts })
+    return res.status(200).json(response)
   },
   async create(req, res) {
     const { name, email, companyId } = req.body
