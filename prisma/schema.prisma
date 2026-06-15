@@ -12,6 +12,7 @@ model Company {
   name         String
   website      String?
   location     String?
+  status       String        @default("active")
   applications Application[]
   contacts     Contact[]
   createdAt    DateTime      @default(now())
@@ -38,6 +39,7 @@ model Contact {
   company     Company?  @relation(fields: [companyId], references: [id], onDelete: SetNull)
   name        String
   email       String
+  status      String    @default("active")
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 

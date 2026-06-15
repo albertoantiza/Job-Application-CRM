@@ -1,3 +1,5 @@
+import { APPLICATION_STATUSES } from '../utils/constants.js'
+
 export const createApplicationSchema = {
   body: {
     companyId: {
@@ -10,7 +12,8 @@ export const createApplicationSchema = {
     },
     status: {
       required: false,
-      type: 'string'
+      type: 'string',
+      enum: APPLICATION_STATUSES
     }
   }
 }
@@ -33,9 +36,8 @@ export const updateApplicationSchema = {
     },
     status: {
       required: false,
-      type: 'string'
+      type: 'string',
+      enum: APPLICATION_STATUSES
     }
   }
 }
-
-

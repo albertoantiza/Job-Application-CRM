@@ -6,16 +6,17 @@ import { parseSearch } from '../utils/search.js'
 import { logger } from '../utils/logger.js'
 import { createEntityController } from './factory.js'
 
-const SEARCHABLE_FIELDS = ['name', 'email']
-const ALLOWED_SORT = ['id', 'name', 'email', 'companyId', 'createdAt', 'updatedAt']
+const SEARCHABLE_FIELDS = ['name', 'email', 'status']
+const ALLOWED_SORT = ['id', 'name', 'email', 'status', 'companyId', 'createdAt', 'updatedAt']
 
 const ctrl = createEntityController('contact', 'Contact', {
   async getAll(req, res) {
-    const { companyId } = req.query
+    const { companyId, status } = req.query
     const where = {
       ...parseSearch(req.query, SEARCHABLE_FIELDS)
     }
     if (companyId) where.companyId = Number(companyId)
+    if (status) where.status = String(status)
     const pagination = parsePagination(req.query)
     const orderBy = parseSort(req.query, ALLOWED_SORT, { id: 'asc' })
     const [contacts, total] = await Promise.all([
@@ -31,12 +32,13 @@ const ctrl = createEntityController('contact', 'Contact', {
     return res.status(200).json(response)
   },
   async create(req, res) {
-    const { name, email, companyId } = req.body
+    const { name, email, companyId, status } = req.body
     try {
       const newContact = await prisma.contact.create({
         data: {
           name,
           email,
+          status: status || 'active',
           ...(companyId ? { company: { connect: { id: Number(companyId) } } } : {})
         }
       })
@@ -53,11 +55,12 @@ const ctrl = createEntityController('contact', 'Contact', {
   },
   async update(req, res) {
     const id = Number(req.params.id)
-    const { companyId, ...rest } = req.body
+    const { companyId, status, ...rest } = req.body
     const data = { ...rest }
+    if (status !== undefined) data.status = status
     if (companyId === undefined && !Object.keys(data).length) {
       throw new BadRequestError('No fields to update', {
-        details: 'Send at least one of: name, email, companyId'
+        details: 'Send at least one of: name, email, companyId, status'
       })
     }
     try {

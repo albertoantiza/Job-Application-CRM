@@ -55,6 +55,16 @@ export const validateRequest = (schema) => {
             return fail(key, `${key} must be a valid date`)
           }
         }
+
+        if (rules.enum && value !== undefined && value !== null) {
+          if (!rules.enum.includes(value)) {
+            return fail(
+              key,
+              `${key} must be one of: ${rules.enum.join(', ')}`,
+              `Received "${value}"`
+            )
+          }
+        }
       }
     }
 

@@ -6,18 +6,19 @@ import { parseSearch } from '../utils/search.js'
 import { logger } from '../utils/logger.js'
 import { createEntityController } from './factory.js'
 
-const SEARCHABLE_FIELDS = ['name', 'website', 'location']
-const ALLOWED_SORT = ['id', 'name', 'website', 'location', 'createdAt', 'updatedAt']
+const SEARCHABLE_FIELDS = ['name', 'website', 'location', 'status']
+const ALLOWED_SORT = ['id', 'name', 'website', 'location', 'status', 'createdAt', 'updatedAt']
 
 const ctrl = createEntityController('company', 'Company', {
   async getAll(req, res) {
-    const { location } = req.query
+    const { location, status } = req.query
     const where = {
       ...parseSearch(req.query, SEARCHABLE_FIELDS)
     }
     if (location) {
       where.location = { contains: String(location), mode: 'insensitive' }
     }
+    if (status) where.status = String(status)
     const pagination = parsePagination(req.query)
     const orderBy = parseSort(req.query, ALLOWED_SORT, { id: 'asc' })
     const [companies, total] = await Promise.all([
@@ -33,10 +34,10 @@ const ctrl = createEntityController('company', 'Company', {
     return res.status(200).json(response)
   },
   async create(req, res) {
-    const { name, website, location } = req.body
+    const { name, website, location, status } = req.body
     try {
       const newCompany = await prisma.company.create({
-        data: { name, website: website || null, location: location || null }
+        data: { name, website: website || null, location: location || null, status: status || 'active' }
       })
       logger.info(`Company ${newCompany.id} created — name="${name}"`)
       return res.status(201).json({ data: newCompany })
@@ -48,14 +49,15 @@ const ctrl = createEntityController('company', 'Company', {
   },
   async update(req, res) {
     const id = Number(req.params.id)
-    const { name, website, location } = req.body
+    const { name, website, location, status } = req.body
     const data = {}
     if (name !== undefined) data.name = name
     if (website !== undefined) data.website = website
     if (location !== undefined) data.location = location
+    if (status !== undefined) data.status = status
     if (!Object.keys(data).length) {
       throw new BadRequestError('No fields to update', {
-        details: 'Send at least one of: name, website, location'
+        details: 'Send at least one of: name, website, location, status'
       })
     }
     try {

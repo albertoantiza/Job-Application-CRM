@@ -1,3 +1,5 @@
+import { ENTITY_STATUSES } from '../utils/constants.js'
+
 export const createContactSchema = {
   body: {
     name: {
@@ -12,6 +14,11 @@ export const createContactSchema = {
     companyId: {
       required: false,
       type: 'number'
+    },
+    status: {
+      required: false,
+      type: 'string',
+      enum: ENTITY_STATUSES
     }
   }
 }
@@ -36,8 +43,11 @@ export const updateContactSchema = {
     companyId: {
       required: false,
       type: 'number'
+    },
+    status: {
+      required: false,
+      type: 'string',
+      enum: ENTITY_STATUSES
     }
   }
 }
-
-
