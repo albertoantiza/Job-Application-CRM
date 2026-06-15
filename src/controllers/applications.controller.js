@@ -2,6 +2,7 @@ import prisma from '../config/prisma.js'
 import { isPrismaError, throwPrismaConflict, throwPrismaNotFound } from '../utils/prismaError.js'
 import { BadRequestError, InternalError } from '../utils/errors.js'
 import { parsePagination, parseSort, buildPaginatedResponse } from '../utils/pagination.js'
+import { parseSearch } from '../utils/search.js'
 import { logger } from '../utils/logger.js'
 import { createEntityController } from './factory.js'
 
@@ -16,20 +17,17 @@ export const testDb = async (req, res) => {
   }
 }
 
+const SEARCHABLE_FIELDS = ['role', 'status']
 const ALLOWED_SORT = ['id', 'role', 'status', 'companyId', 'createdAt', 'updatedAt']
 
 const ctrl = createEntityController('application', 'Application', {
   async getAll(req, res) {
-    const { search, status, companyId } = req.query
-    const where = {}
+    const { status, companyId } = req.query
+    const where = {
+      ...parseSearch(req.query, SEARCHABLE_FIELDS)
+    }
     if (status) where.status = String(status)
     if (companyId) where.companyId = Number(companyId)
-    if (search) {
-      where.OR = [
-        { role: { contains: String(search), mode: 'insensitive' } },
-        { status: { contains: String(search), mode: 'insensitive' } }
-      ]
-    }
     const pagination = parsePagination(req.query)
     const orderBy = parseSort(req.query, ALLOWED_SORT, { id: 'asc' })
     const [applications, total] = await Promise.all([

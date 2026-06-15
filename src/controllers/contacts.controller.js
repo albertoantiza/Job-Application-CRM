@@ -2,22 +2,20 @@ import prisma from '../config/prisma.js'
 import { isPrismaError, throwPrismaConflict, throwPrismaNotFound } from '../utils/prismaError.js'
 import { BadRequestError } from '../utils/errors.js'
 import { parsePagination, parseSort, buildPaginatedResponse } from '../utils/pagination.js'
+import { parseSearch } from '../utils/search.js'
 import { logger } from '../utils/logger.js'
 import { createEntityController } from './factory.js'
 
+const SEARCHABLE_FIELDS = ['name', 'email']
 const ALLOWED_SORT = ['id', 'name', 'email', 'companyId', 'createdAt', 'updatedAt']
 
 const ctrl = createEntityController('contact', 'Contact', {
   async getAll(req, res) {
-    const { search, companyId } = req.query
-    const where = {}
-    if (companyId) where.companyId = Number(companyId)
-    if (search) {
-      where.OR = [
-        { name: { contains: String(search), mode: 'insensitive' } },
-        { email: { contains: String(search), mode: 'insensitive' } }
-      ]
+    const { companyId } = req.query
+    const where = {
+      ...parseSearch(req.query, SEARCHABLE_FIELDS)
     }
+    if (companyId) where.companyId = Number(companyId)
     const pagination = parsePagination(req.query)
     const orderBy = parseSort(req.query, ALLOWED_SORT, { id: 'asc' })
     const [contacts, total] = await Promise.all([

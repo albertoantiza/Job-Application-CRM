@@ -2,21 +2,18 @@ import prisma from '../config/prisma.js'
 import { isPrismaError, throwPrismaNotFound } from '../utils/prismaError.js'
 import { BadRequestError } from '../utils/errors.js'
 import { parsePagination, parseSort, buildPaginatedResponse } from '../utils/pagination.js'
+import { parseSearch } from '../utils/search.js'
 import { logger } from '../utils/logger.js'
 import { createEntityController } from './factory.js'
 
+const SEARCHABLE_FIELDS = ['name', 'website', 'location']
 const ALLOWED_SORT = ['id', 'name', 'website', 'location', 'createdAt', 'updatedAt']
 
 const ctrl = createEntityController('company', 'Company', {
   async getAll(req, res) {
-    const { search, location } = req.query
-    const where = {}
-    if (search) {
-      where.OR = [
-        { name: { contains: String(search), mode: 'insensitive' } },
-        { website: { contains: String(search), mode: 'insensitive' } },
-        { location: { contains: String(search), mode: 'insensitive' } }
-      ]
+    const { location } = req.query
+    const where = {
+      ...parseSearch(req.query, SEARCHABLE_FIELDS)
     }
     if (location) {
       where.location = { contains: String(location), mode: 'insensitive' }
