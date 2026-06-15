@@ -1,5 +1,4 @@
-import prisma from '../config/prisma.js'
-import { isPrismaError, throwPrismaConflict, throwPrismaNotFound } from '../utils/prismaError.js'
+import { contactService } from '../services/contact.service.js'
 import { BadRequestError } from '../utils/errors.js'
 import { parsePagination, parseSort, buildPaginatedResponse } from '../utils/pagination.js'
 import { parseSearch } from '../utils/search.js'
@@ -9,7 +8,7 @@ import { createEntityController } from './factory.js'
 const SEARCHABLE_FIELDS = ['name', 'email', 'status']
 const ALLOWED_SORT = ['id', 'name', 'email', 'status', 'companyId', 'createdAt', 'updatedAt']
 
-const ctrl = createEntityController('contact', 'Contact', {
+const ctrl = createEntityController('Contact', contactService, {
   async getAll(req, res) {
     const { companyId, status } = req.query
     const where = {
@@ -19,39 +18,19 @@ const ctrl = createEntityController('contact', 'Contact', {
     if (status) where.status = String(status)
     const pagination = parsePagination(req.query)
     const orderBy = parseSort(req.query, ALLOWED_SORT, { id: 'asc' })
-    const [contacts, total] = await Promise.all([
-      prisma.contact.findMany({
-        where: Object.keys(where).length ? where : undefined,
-        ...pagination,
-        orderBy
-      }),
-      prisma.contact.count({ where: Object.keys(where).length ? where : undefined })
-    ])
-    const response = buildPaginatedResponse(contacts, pagination, total)
-    logger.info(`Contact list returned ${contacts.length} results`)
+    const { entities, total } = await contactService.findMany({
+      where: Object.keys(where).length ? where : undefined,
+      orderBy,
+      ...pagination
+    })
+    const response = buildPaginatedResponse(entities, pagination, total)
+    logger.info(`Contact list returned ${entities.length} results`)
     return res.status(200).json(response)
   },
   async create(req, res) {
-    const { name, email, companyId, status } = req.body
-    try {
-      const newContact = await prisma.contact.create({
-        data: {
-          name,
-          email,
-          status: status || 'active',
-          ...(companyId ? { company: { connect: { id: Number(companyId) } } } : {})
-        }
-      })
-      logger.info(`Contact ${newContact.id} created — name="${name}"`)
-      return res.status(201).json({ data: newContact })
-    } catch (error) {
-      if (isPrismaError(error, 'P2003')) {
-        throwPrismaConflict('companyId', 'company')
-      }
-      throw new BadRequestError('Could not create contact', {
-        details: error.message
-      })
-    }
+    const newContact = await contactService.create(req.body)
+    logger.info(`Contact ${newContact.id} created — name="${req.body.name}"`)
+    return res.status(201).json({ data: newContact })
   },
   async update(req, res) {
     const id = Number(req.params.id)
@@ -63,29 +42,11 @@ const ctrl = createEntityController('contact', 'Contact', {
         details: 'Send at least one of: name, email, companyId, status'
       })
     }
-    try {
-      const updatedContact = await prisma.contact.update({
-        where: { id },
-        data: {
-          ...(companyId === undefined
-            ? {}
-            : companyId === null
-              ? { company: { disconnect: true } }
-              : { company: { connect: { id: Number(companyId) } } }),
-          ...data
-        }
-      })
-      logger.info(`Contact ${id} updated`)
-      return res.status(200).json({ data: updatedContact })
-    } catch (error) {
-      if (isPrismaError(error, 'P2025')) {
-        logger.warn(`Contact ${id} not found — update`)
-        throwPrismaNotFound('Contact')
-      }
-      throw error
-    }
+    const updatedContact = await contactService.update(id, { ...data, companyId })
+    logger.info(`Contact ${id} updated`)
+    return res.status(200).json({ data: updatedContact })
   }
-})
+}, { searchableFields: SEARCHABLE_FIELDS })
 
 export const getContacts = ctrl.getAll
 export const getContactById = ctrl.getById

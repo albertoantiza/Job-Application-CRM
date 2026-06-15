@@ -1,9 +1,9 @@
-import prisma from '../config/prisma.js'
-import { isPrismaError, throwPrismaConflict, throwPrismaNotFound } from '../utils/prismaError.js'
+import { applicationService } from '../services/application.service.js'
 import { BadRequestError, InternalError } from '../utils/errors.js'
 import { parsePagination, parseSort, buildPaginatedResponse } from '../utils/pagination.js'
 import { parseSearch } from '../utils/search.js'
 import { logger } from '../utils/logger.js'
+import prisma from '../config/prisma.js'
 import { createEntityController } from './factory.js'
 
 export const testDb = async (req, res) => {
@@ -20,7 +20,7 @@ export const testDb = async (req, res) => {
 const SEARCHABLE_FIELDS = ['role', 'status']
 const ALLOWED_SORT = ['id', 'role', 'status', 'companyId', 'createdAt', 'updatedAt']
 
-const ctrl = createEntityController('application', 'Application', {
+const ctrl = createEntityController('Application', applicationService, {
   async getAll(req, res) {
     const { status, companyId } = req.query
     const where = {
@@ -30,67 +30,33 @@ const ctrl = createEntityController('application', 'Application', {
     if (companyId) where.companyId = Number(companyId)
     const pagination = parsePagination(req.query)
     const orderBy = parseSort(req.query, ALLOWED_SORT, { id: 'asc' })
-    const [applications, total] = await Promise.all([
-      prisma.application.findMany({
-        where: Object.keys(where).length ? where : undefined,
-        ...pagination,
-        orderBy
-      }),
-      prisma.application.count({ where: Object.keys(where).length ? where : undefined })
-    ])
-    const response = buildPaginatedResponse(applications, pagination, total)
-    logger.info(`Application list returned ${applications.length} results`)
+    const { entities, total } = await applicationService.findManyWithFilters({
+      where: Object.keys(where).length ? where : undefined,
+      orderBy,
+      ...pagination
+    })
+    const response = buildPaginatedResponse(entities, pagination, total)
+    logger.info(`Application list returned ${entities.length} results`)
     return res.status(200).json(response)
   },
   async create(req, res) {
-    const { companyId, role, status } = req.body
-    try {
-      const newApplication = await prisma.application.create({
-        data: {
-          role,
-          status: status || 'applied',
-          ...(companyId ? { company: { connect: { id: Number(companyId) } } } : {})
-        }
-      })
-      logger.info(`Application ${newApplication.id} created — role="${role}"`)
-      return res.status(201).json({ data: newApplication })
-    } catch (error) {
-      if (isPrismaError(error, 'P2003')) {
-        throwPrismaConflict('companyId', 'company')
-      }
-      throw error
-    }
+    const newApplication = await applicationService.create(req.body)
+    logger.info(`Application ${newApplication.id} created — role="${req.body.role}"`)
+    return res.status(201).json({ data: newApplication })
   },
   async update(req, res) {
     const id = Number(req.params.id)
     const { companyId, ...rest } = req.body
-    const data = { ...rest }
-    if (companyId !== undefined && companyId !== null) {
-      data.company = { connect: { id: Number(companyId) } }
-    } else if (companyId === null) {
-      data.company = { disconnect: true }
-    }
-    if (!Object.keys(data).length) {
+    if (!Object.keys(rest).length && companyId === undefined) {
       throw new BadRequestError('No fields to update', {
         details: 'Send at least one of: companyId, role, status'
       })
     }
-    try {
-      const updatedApplication = await prisma.application.update({ where: { id }, data })
-      logger.info(`Application ${id} updated`)
-      return res.status(200).json({ data: updatedApplication })
-    } catch (error) {
-      if (isPrismaError(error, 'P2025')) {
-        logger.warn(`Application ${id} not found — update`)
-        throwPrismaNotFound('Application')
-      }
-      if (isPrismaError(error, 'P2003')) {
-        throwPrismaConflict('companyId', 'company')
-      }
-      throw error
-    }
+    const updatedApplication = await applicationService.update(id, { ...rest, companyId })
+    logger.info(`Application ${id} updated`)
+    return res.status(200).json({ data: updatedApplication })
   }
-})
+}, { searchableFields: SEARCHABLE_FIELDS })
 
 export const getApplications = ctrl.getAll
 export const getApplicationById = ctrl.getById

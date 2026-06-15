@@ -1,5 +1,4 @@
-import prisma from '../config/prisma.js'
-import { isPrismaError, throwPrismaNotFound } from '../utils/prismaError.js'
+import { companyService } from '../services/company.service.js'
 import { BadRequestError } from '../utils/errors.js'
 import { parsePagination, parseSort, buildPaginatedResponse } from '../utils/pagination.js'
 import { parseSearch } from '../utils/search.js'
@@ -9,7 +8,7 @@ import { createEntityController } from './factory.js'
 const SEARCHABLE_FIELDS = ['name', 'website', 'location', 'status']
 const ALLOWED_SORT = ['id', 'name', 'website', 'location', 'status', 'createdAt', 'updatedAt']
 
-const ctrl = createEntityController('company', 'Company', {
+const ctrl = createEntityController('Company', companyService, {
   async getAll(req, res) {
     const { location, status } = req.query
     const where = {
@@ -21,31 +20,19 @@ const ctrl = createEntityController('company', 'Company', {
     if (status) where.status = String(status)
     const pagination = parsePagination(req.query)
     const orderBy = parseSort(req.query, ALLOWED_SORT, { id: 'asc' })
-    const [companies, total] = await Promise.all([
-      prisma.company.findMany({
-        where: Object.keys(where).length ? where : undefined,
-        ...pagination,
-        orderBy
-      }),
-      prisma.company.count({ where: Object.keys(where).length ? where : undefined })
-    ])
-    const response = buildPaginatedResponse(companies, pagination, total)
-    logger.info(`Company list returned ${companies.length} results`)
+    const { entities, total } = await companyService.findMany({
+      where: Object.keys(where).length ? where : undefined,
+      orderBy,
+      ...pagination
+    })
+    const response = buildPaginatedResponse(entities, pagination, total)
+    logger.info(`Company list returned ${entities.length} results`)
     return res.status(200).json(response)
   },
   async create(req, res) {
-    const { name, website, location, status } = req.body
-    try {
-      const newCompany = await prisma.company.create({
-        data: { name, website: website || null, location: location || null, status: status || 'active' }
-      })
-      logger.info(`Company ${newCompany.id} created — name="${name}"`)
-      return res.status(201).json({ data: newCompany })
-    } catch (error) {
-      throw new BadRequestError('Could not create company', {
-        details: error.message
-      })
-    }
+    const newCompany = await companyService.create(req.body)
+    logger.info(`Company ${newCompany.id} created — name="${req.body.name}"`)
+    return res.status(201).json({ data: newCompany })
   },
   async update(req, res) {
     const id = Number(req.params.id)
@@ -60,19 +47,11 @@ const ctrl = createEntityController('company', 'Company', {
         details: 'Send at least one of: name, website, location, status'
       })
     }
-    try {
-      const updatedCompany = await prisma.company.update({ where: { id }, data })
-      logger.info(`Company ${id} updated`)
-      return res.status(200).json({ data: updatedCompany })
-    } catch (error) {
-      if (isPrismaError(error, 'P2025')) {
-        logger.warn(`Company ${id} not found — update`)
-        throwPrismaNotFound('Company')
-      }
-      throw error
-    }
+    const updatedCompany = await companyService.update(id, data)
+    logger.info(`Company ${id} updated`)
+    return res.status(200).json({ data: updatedCompany })
   }
-})
+}, { searchableFields: SEARCHABLE_FIELDS })
 
 export const getCompanies = ctrl.getAll
 export const getCompanyById = ctrl.getById

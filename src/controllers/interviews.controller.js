@@ -1,63 +1,31 @@
-import prisma from '../config/prisma.js'
-import { isPrismaError, throwPrismaConflict, throwPrismaNotFound } from '../utils/prismaError.js'
+import { interviewService } from '../services/interview.service.js'
 import { BadRequestError } from '../utils/errors.js'
 import { logger } from '../utils/logger.js'
 import { createEntityController } from './factory.js'
 
 const ctrl = createEntityController(
-  'interview',
   'Interview',
+  interviewService,
   {
     async create(req, res) {
-      const { applicationId, date, stage, notes } = req.body
-      try {
-        const newInterview = await prisma.interview.create({
-          data: {
-            date: new Date(date),
-            stage,
-            notes: notes || null,
-            application: { connect: { id: Number(applicationId) } }
-          }
-        })
-        logger.info(`Interview ${newInterview.id} created — stage="${stage}"`)
-        return res.status(201).json({ data: newInterview })
-      } catch (error) {
-        if (isPrismaError(error, 'P2003')) {
-          throwPrismaConflict('applicationId', 'application')
-        }
-        throw new BadRequestError('Could not create interview', {
-          details: error.message
-        })
-      }
+      const newInterview = await interviewService.create(req.body)
+      logger.info(`Interview ${newInterview.id} created — stage="${req.body.stage}"`)
+      return res.status(201).json({ data: newInterview })
     },
     async update(req, res) {
       const id = Number(req.params.id)
       const { applicationId, date, notes, ...rest } = req.body
       const data = { ...rest }
-      if (date !== undefined) data.date = new Date(date)
+      if (date !== undefined) data.date = date
       if (notes !== undefined) data.notes = notes
-      if (applicationId !== undefined && applicationId !== null) {
-        data.application = { connect: { id: Number(applicationId) } }
-      }
-      if (!Object.keys(data).length) {
+      if (!Object.keys(data).length && applicationId === undefined) {
         throw new BadRequestError('No fields to update', {
           details: 'Send at least one of: applicationId, date, stage, notes'
         })
       }
-      try {
-        const updatedInterview = await prisma.interview.update({ where: { id }, data })
-        logger.info(`Interview ${id} updated`)
-        return res.status(200).json({ data: updatedInterview })
-      } catch (error) {
-        if (isPrismaError(error, 'P2025')) {
-          logger.warn(`Interview ${id} not found — update`)
-          throwPrismaNotFound('Interview')
-        }
-        if (isPrismaError(error, 'P2003')) {
-          throwPrismaConflict('applicationId', 'application')
-        }
-        throw error
-      }
+      const updatedInterview = await interviewService.update(id, { ...data, applicationId })
+      logger.info(`Interview ${id} updated`)
+      return res.status(200).json({ data: updatedInterview })
     }
   },
   { searchableFields: ['stage', 'notes'] }
