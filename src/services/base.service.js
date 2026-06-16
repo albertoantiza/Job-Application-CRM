@@ -17,10 +17,6 @@ export const createBaseService = (modelName) => {
       return prismaModel.findUnique({ where: { id } })
     },
 
-    async create(data) {
-      return prismaModel.create({ data })
-    },
-
     async update(id, data) {
       try {
         return await prismaModel.update({ where: { id }, data })
