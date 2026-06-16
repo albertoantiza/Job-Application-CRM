@@ -1,6 +1,6 @@
 import { contactService } from '../services/contact.service.js'
 import { BadRequestError } from '../utils/errors.js'
-import { parsePagination, parseSort, buildPaginatedResponse } from '../utils/pagination.js'
+import { parsePagination, parseSort, formatPaginatedResponse } from '../utils/pagination.js'
 import { parseSearch } from '../utils/search.js'
 import { logger } from '../utils/logger.js'
 import { createEntityController } from './factory.js'
@@ -23,7 +23,7 @@ const ctrl = createEntityController('Contact', contactService, {
       orderBy,
       ...pagination
     })
-    const response = buildPaginatedResponse(entities, pagination, total)
+    const response = formatPaginatedResponse(entities, pagination, total)
     logger.info(`Contact list returned ${entities.length} results`)
     return res.status(200).json(response)
   },

@@ -1,5 +1,5 @@
 import { NotFoundError } from '../utils/errors.js'
 
-export const notFound = (req, res, next) => {
+export const handleNotFound = (req, res, next) => {
   next(new NotFoundError('Route not found'))
 }

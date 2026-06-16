@@ -18,7 +18,7 @@ export const parseSort = (query, allowedFields = DEFAULT_ALLOWED_SORT, defaultSo
   return defaultSort
 }
 
-export const buildPaginatedResponse = (data, pagination, total) => {
+export const formatPaginatedResponse = (data, pagination, total) => {
   if (!pagination.page) {
     return { data }
   }

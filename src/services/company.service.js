@@ -1,5 +1,5 @@
 import prisma from '../config/prisma.js'
-import { throwPrismaNotFound } from '../utils/prismaError.js'
+import { throwNotFound } from '../utils/prismaError.js'
 import { createBaseService } from './base.service.js'
 
 const base = createBaseService('company')
@@ -16,7 +16,7 @@ export const companyService = {
 
   async update(id, data) {
     const updated = await base.update(id, data)
-    if (!updated) throwPrismaNotFound('Company')
+    if (!updated) throwNotFound('Company')
     return updated
   }
 }

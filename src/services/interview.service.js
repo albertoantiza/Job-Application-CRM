@@ -1,5 +1,5 @@
 import prisma from '../config/prisma.js'
-import { isPrismaError, throwPrismaConflict, throwPrismaNotFound } from '../utils/prismaError.js'
+import { isPrismaError, throwForeignKeyError, throwNotFound } from '../utils/prismaError.js'
 import { createBaseService } from './base.service.js'
 
 const base = createBaseService('interview')
@@ -20,7 +20,7 @@ export const interviewService = {
       })
     } catch (error) {
       if (isPrismaError(error, 'P2003')) {
-        throwPrismaConflict('applicationId', 'application')
+        throwForeignKeyError('applicationId', 'application')
       }
       throw error
     }
@@ -35,7 +35,7 @@ export const interviewService = {
       updateData.application = { connect: { id: Number(applicationId) } }
     }
     const updated = await base.update(id, updateData)
-    if (!updated) throwPrismaNotFound('Interview')
+    if (!updated) throwNotFound('Interview')
     return updated
   }
 }

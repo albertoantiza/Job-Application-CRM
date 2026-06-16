@@ -9,7 +9,7 @@ const router = Router()
 
 logger.info('Applications routes loaded')
 
-router.get('/test-db', controller.testDb)
+router.get('/test-db', controller.healthCheck)
 router.get('/', controller.getAll)
 router.get('/:id', validateRequest(entityIdSchema), controller.getById)
 router.post('/', validateRequest(createApplicationSchema), controller.create)

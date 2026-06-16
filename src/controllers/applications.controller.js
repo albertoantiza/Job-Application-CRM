@@ -1,12 +1,12 @@
 import { applicationService } from '../services/application.service.js'
 import { BadRequestError, InternalError } from '../utils/errors.js'
-import { parsePagination, parseSort, buildPaginatedResponse } from '../utils/pagination.js'
+import { parsePagination, parseSort, formatPaginatedResponse } from '../utils/pagination.js'
 import { parseSearch } from '../utils/search.js'
 import { logger } from '../utils/logger.js'
 import prisma from '../config/prisma.js'
 import { createEntityController } from './factory.js'
 
-export const testDb = async (req, res) => {
+export const healthCheck = async (req, res) => {
   try {
     const applications = await prisma.application.findMany({ take: 1 })
     return res.status(200).json({ data: { ok: true, count: applications.length } })
@@ -35,7 +35,7 @@ const ctrl = createEntityController('Application', applicationService, {
       orderBy,
       ...pagination
     })
-    const response = buildPaginatedResponse(entities, pagination, total)
+    const response = formatPaginatedResponse(entities, pagination, total)
     logger.info(`Application list returned ${entities.length} results`)
     return res.status(200).json(response)
   },

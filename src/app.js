@@ -5,7 +5,7 @@ dotenv.config()
 import express from 'express'
 import routes from './routes/index.js'
 import { requestLogger } from './middlewares/requestLogger.js'
-import { notFound } from './middlewares/notFound.js'
+import { handleNotFound } from './middlewares/notFound.js'
 import { errorHandler } from './middlewares/errorHandler.js'
 
 const app = express()
@@ -16,7 +16,7 @@ app.use(requestLogger)
 
 app.use('/api', routes)
 
-app.use(notFound)
+app.use(handleNotFound)
 app.use(errorHandler)
 
 export default app

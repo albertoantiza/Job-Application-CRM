@@ -1,5 +1,5 @@
-import { throwPrismaNotFound } from '../utils/prismaError.js'
-import { parsePagination, parseSort, buildPaginatedResponse } from '../utils/pagination.js'
+import { throwNotFound } from '../utils/prismaError.js'
+import { parsePagination, parseSort, formatPaginatedResponse } from '../utils/pagination.js'
 import { parseSearch } from '../utils/search.js'
 import { logger } from '../utils/logger.js'
 
@@ -12,7 +12,7 @@ export const createEntityController = (entityName, service, overrides = {}, opti
       const pagination = parsePagination(req.query)
       const orderBy = parseSort(req.query, ['id', 'createdAt', 'updatedAt'])
       const { entities, total } = await service.findMany({ where, orderBy, ...pagination })
-      const response = buildPaginatedResponse(entities, pagination, total)
+      const response = formatPaginatedResponse(entities, pagination, total)
       logger.info(`${entityName} list returned ${entities.length} results`)
       return res.status(200).json(response)
     })
@@ -22,7 +22,7 @@ export const createEntityController = (entityName, service, overrides = {}, opti
     const entity = await service.findById(id)
     if (!entity) {
       logger.warn(`${entityName} ${id} not found — getById`)
-      throwPrismaNotFound(entityName)
+      throwNotFound(entityName)
     }
     logger.info(`${entityName} ${id} retrieved`)
     return res.status(200).json({ data: entity })
@@ -33,7 +33,7 @@ export const createEntityController = (entityName, service, overrides = {}, opti
     const deletedEntity = await service.delete(id)
     if (!deletedEntity) {
       logger.warn(`${entityName} ${id} not found — deleteById`)
-      throwPrismaNotFound(entityName)
+      throwNotFound(entityName)
     }
     logger.info(`${entityName} ${id} deleted`)
     return res.status(200).json({
