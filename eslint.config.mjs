@@ -11,6 +11,9 @@ export default defineConfig([
         console: 'readonly',
         process: 'readonly'
       }
+    },
+    rules: {
+      'no-unused-vars': ['error', { argsIgnorePattern: '^_' }]
     }
   }
 ])

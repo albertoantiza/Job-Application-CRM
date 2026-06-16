@@ -16,35 +16,11 @@ export class NotFoundError extends ApiError {
   }
 }
 
-export class ConflictError extends ApiError {
-  constructor(message = 'Resource conflict', options = {}) {
-    super(409, message, options)
-    this.name = 'ConflictError'
-    this.type = 'conflict'
-  }
-}
-
 export class ValidationError extends ApiError {
   constructor(message = 'Validation failed', options = {}) {
     super(400, message, options)
     this.name = 'ValidationError'
     this.type = 'validation'
-  }
-}
-
-export class UnauthorizedError extends ApiError {
-  constructor(message = 'Unauthorized', options = {}) {
-    super(401, message, options)
-    this.name = 'UnauthorizedError'
-    this.type = 'unauthorized'
-  }
-}
-
-export class ForbiddenError extends ApiError {
-  constructor(message = 'Forbidden', options = {}) {
-    super(403, message, options)
-    this.name = 'ForbiddenError'
-    this.type = 'forbidden'
   }
 }
 

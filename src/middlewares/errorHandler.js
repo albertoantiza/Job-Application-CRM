@@ -2,8 +2,6 @@ import ApiError from '../utils/ApiError.js'
 import { logger } from '../utils/logger.js'
 
 export const errorHandler = (err, req, res, _next) => {
-  void _next
-
   if (err instanceof ApiError) {
     const payload = {
       error: err.message,
