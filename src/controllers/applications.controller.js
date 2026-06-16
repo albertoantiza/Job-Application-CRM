@@ -30,7 +30,7 @@ const ctrl = createEntityController('Application', applicationService, {
     if (companyId) where.companyId = Number(companyId)
     const pagination = parsePagination(req.query)
     const orderBy = parseSort(req.query, ALLOWED_SORT, { id: 'asc' })
-    const { entities, total } = await applicationService.findManyWithFilters({
+    const { entities, total } = await applicationService.findMany({
       where: Object.keys(where).length ? where : undefined,
       orderBy,
       ...pagination

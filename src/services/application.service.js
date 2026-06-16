@@ -7,11 +7,6 @@ const base = createBaseService('application')
 export const applicationService = {
   ...base,
 
-  async findManyWithFilters({ where, orderBy, skip, take }) {
-    const result = await base.findMany({ where, orderBy, skip, take })
-    return result
-  },
-
   async create(data) {
     const { companyId, role, status } = data
     try {
