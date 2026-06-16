@@ -1,5 +1,4 @@
 import { contactService } from '../services/contact.service.js'
-import { BadRequestError } from '../utils/errors.js'
 import { parsePagination, parseSort, formatPaginatedResponse } from '../utils/pagination.js'
 import { parseSearch } from '../utils/search.js'
 import { logger } from '../utils/logger.js'
@@ -32,20 +31,6 @@ const ctrl = createEntityController('Contact', contactService, {
     logger.info(`Contact ${newContact.id} created — name="${req.body.name}"`)
     return res.status(201).json({ data: newContact })
   },
-  async update(req, res) {
-    const id = Number(req.params.id)
-    const { companyId, status, ...rest } = req.body
-    const data = { ...rest }
-    if (status !== undefined) data.status = status
-    if (companyId === undefined && !Object.keys(data).length) {
-      throw new BadRequestError('No fields to update', {
-        details: 'Send at least one of: name, email, companyId, status'
-      })
-    }
-    const updatedContact = await contactService.update(id, { ...data, companyId })
-    logger.info(`Contact ${id} updated`)
-    return res.status(200).json({ data: updatedContact })
-  }
 }, { searchableFields: SEARCHABLE_FIELDS })
 
 export const getContacts = ctrl.getAll

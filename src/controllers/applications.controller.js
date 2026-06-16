@@ -1,5 +1,5 @@
 import { applicationService } from '../services/application.service.js'
-import { BadRequestError, InternalError } from '../utils/errors.js'
+import { InternalError } from '../utils/errors.js'
 import { parsePagination, parseSort, formatPaginatedResponse } from '../utils/pagination.js'
 import { parseSearch } from '../utils/search.js'
 import { logger } from '../utils/logger.js'
@@ -44,18 +44,6 @@ const ctrl = createEntityController('Application', applicationService, {
     logger.info(`Application ${newApplication.id} created — role="${req.body.role}"`)
     return res.status(201).json({ data: newApplication })
   },
-  async update(req, res) {
-    const id = Number(req.params.id)
-    const { companyId, ...rest } = req.body
-    if (!Object.keys(rest).length && companyId === undefined) {
-      throw new BadRequestError('No fields to update', {
-        details: 'Send at least one of: companyId, role, status'
-      })
-    }
-    const updatedApplication = await applicationService.update(id, { ...rest, companyId })
-    logger.info(`Application ${id} updated`)
-    return res.status(200).json({ data: updatedApplication })
-  }
 }, { searchableFields: SEARCHABLE_FIELDS })
 
 export const getApplications = ctrl.getAll

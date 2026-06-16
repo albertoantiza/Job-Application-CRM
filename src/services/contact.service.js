@@ -1,4 +1,5 @@
 import prisma from '../config/prisma.js'
+import { BadRequestError } from '../utils/errors.js'
 import { isPrismaError, throwForeignKeyError, throwNotFound } from '../utils/prismaError.js'
 import { createBaseService } from './base.service.js'
 
@@ -27,6 +28,11 @@ export const contactService = {
   },
 
   async update(id, data) {
+    if (!Object.keys(data).length) {
+      throw new BadRequestError('No fields to update', {
+        details: 'Send at least one of: name, email, companyId, status'
+      })
+    }
     const { companyId, ...rest } = data
     const updateData = { ...rest }
     if (companyId !== undefined) {

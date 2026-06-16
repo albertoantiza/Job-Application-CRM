@@ -28,6 +28,20 @@ export const createEntityController = (entityName, service, overrides = {}, opti
     return res.status(200).json({ data: entity })
   }
 
+  const create = overrides.create || (async (req, res) => {
+    const entity = await service.create(req.body)
+    logger.info(`${entityName} ${entity.id} created`)
+    return res.status(201).json({ data: entity })
+  })
+
+  const update = overrides.update || (async (req, res) => {
+    const id = Number(req.params.id)
+    const entity = await service.update(id, req.body)
+    if (!entity) throwNotFound(entityName)
+    logger.info(`${entityName} ${id} updated`)
+    return res.status(200).json({ data: entity })
+  })
+
   const deleteById = async (req, res) => {
     const id = Number(req.params.id)
     const deletedEntity = await service.delete(id)
@@ -45,8 +59,8 @@ export const createEntityController = (entityName, service, overrides = {}, opti
   return {
     getAll,
     getById,
-    create: overrides.create,
-    update: overrides.update,
+    create,
+    update,
     delete: deleteById
   }
 }
