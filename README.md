@@ -57,3 +57,49 @@ npm run dev
 
 The API starts on `http://localhost:3000`.
 
+## API Overview
+
+All endpoints are under `/api`:
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/api/companies` | List companies (with search, sort, pagination) |
+| `POST` | `/api/companies` | Create a company |
+| `GET` | `/api/companies/:id` | Get a company by ID |
+| `PATCH` | `/api/companies/:id` | Update a company |
+| `DELETE` | `/api/companies/:id` | Delete a company |
+| `GET` | `/api/contacts` | List contacts |
+| `POST` | `/api/contacts` | Create a contact |
+| `GET` | `/api/contacts/:id` | Get a contact by ID |
+| `PATCH` | `/api/contacts/:id` | Update a contact |
+| `DELETE` | `/api/contacts/:id` | Delete a contact |
+| `GET` | `/api/applications` | List applications |
+| `POST` | `/api/applications` | Create an application |
+| `GET` | `/api/applications/:id` | Get an application by ID |
+| `PATCH` | `/api/applications/:id` | Update an application |
+| `DELETE` | `/api/applications/:id` | Delete an application |
+| `GET` | `/api/interviews` | List interviews |
+| `POST` | `/api/interviews` | Create an interview |
+| `GET` | `/api/interviews/:id` | Get an interview by ID |
+| `PATCH` | `/api/interviews/:id` | Update an interview |
+| `DELETE` | `/api/interviews/:id` | Delete an interview |
+| `GET` | `/api/notes` | List notes |
+| `POST` | `/api/notes` | Create a note |
+| `GET` | `/api/notes/:id` | Get a note by ID |
+| `PATCH` | `/api/notes/:id` | Update a note |
+| `DELETE` | `/api/notes/:id` | Delete a note |
+
+### Status values
+
+- **Application status**: `applied`, `phone_screen`, `interview`, `offer`, `rejected`, `accepted`, `withdrawn`
+- **Company/Contact status**: `active`, `inactive`
+
+### Query parameters
+
+List endpoints support:
+
+- `?search=` — Full-text search across relevant fields
+- `?page=&limit=` — Pagination
+- `?sortBy=&sortOrder=` — Sort by any allowed field
+
+
