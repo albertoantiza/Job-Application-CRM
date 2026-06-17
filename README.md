@@ -23,3 +23,11 @@ I started programming with JavaScript, so **Node.js** and **Express** were the n
 
 No TypeScript on purpose — I wanted to solidify my vanilla JavaScript skills and keep the setup lean. Every tool in the stack is something I've worked with before, so the focus stays on architecture, patterns and APIs.
 
+## Models
+
+- **Companies** — Where you applied
+- **Applications** — Each role you applied for, linked to a company
+- **Contacts** — People you connected with, linked to a company
+- **Interviews** — Interview events, linked to an application
+- **Notes** — Free-form notes, linked to an application
+
