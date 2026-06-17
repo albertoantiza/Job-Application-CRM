@@ -102,6 +102,44 @@ List endpoints support:
 - `?page=&limit=` — Pagination
 - `?sortBy=&sortOrder=` — Sort by any allowed field
 
+## Usage
+
+Typical workflow — create a company, add an application, then log interviews and notes:
+
+```bash
+# Create a company
+curl -X POST http://localhost:3000/api/companies \
+  -H "Content-Type: application/json" \
+  -d '{"name": "Acme Corp", "website": "https://acme.example"}'
+
+# Create an application for that company
+curl -X POST http://localhost:3000/api/applications \
+  -H "Content-Type: application/json" \
+  -d '{"companyId": 1, "role": "Software Engineer", "source": "LinkedIn"}'
+
+# Update the application status after an interview
+curl -X PATCH http://localhost:3000/api/applications/1 \
+  -H "Content-Type: application/json" \
+  -d '{"status": "interview"}'
+
+# Log an interview
+curl -X POST http://localhost:3000/api/interviews \
+  -H "Content-Type: application/json" \
+  -d '{"applicationId": 1, "round": 1, "date": "2026-06-17", "notes": "Went well"}'
+
+# Add a contact at the company
+curl -X POST http://localhost:3000/api/contacts \
+  -H "Content-Type: application/json" \
+  -d '{"companyId": 1, "name": "Jane Doe", "email": "jane@acme.example"}'
+
+# Take notes on the application
+curl -X POST http://localhost:3000/api/notes \
+  -H "Content-Type: application/json" \
+  -d '{"applicationId": 1, "content": "Follow up in a week"}'
+
+# Search and paginate your applications
+curl "http://localhost:3000/api/applications?search=engineer&page=1&limit=10"
+```
 
 ## Project Structure
 
