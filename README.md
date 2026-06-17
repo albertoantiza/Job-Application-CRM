@@ -31,3 +31,29 @@ No TypeScript on purpose — I wanted to solidify my vanilla JavaScript skills a
 - **Interviews** — Interview events, linked to an application
 - **Notes** — Free-form notes, linked to an application
 
+## Getting Started
+
+### Prerequisites
+
+- Node.js 20+
+- PostgreSQL running locally
+
+### Setup
+
+```bash
+# Clone and install
+npm install
+
+# Copy environment config
+cp .env.example .env
+# Edit .env with your database credentials
+
+# Run database migrations
+npx prisma migrate dev
+
+# Start the server
+npm run dev
+```
+
+The API starts on `http://localhost:3000`.
+
