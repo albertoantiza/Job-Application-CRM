@@ -103,3 +103,22 @@ List endpoints support:
 - `?sortBy=&sortOrder=` — Sort by any allowed field
 
 
+## Project Structure
+
+```
+src/
+├── config/         # Prisma client, env config
+├── controllers/    # HTTP layer (thin, delegates to services)
+├── middlewares/     # Validation, error handling, request logging
+├── routes/         # Express route definitions
+├── services/       # Business logic, Prisma queries
+├── utils/          # Errors, pagination, search helpers
+└── validators/     # Per-entity request schemas
+```
+
+## Scripts
+
+```bash
+npm run dev      # Start dev server with nodemon
+npm run lint     # Run ESLint
+```
