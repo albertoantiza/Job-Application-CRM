@@ -16,4 +16,5 @@ router.post('/', validateRequest(createApplicationSchema), controller.create)
 router.patch('/:id', validateRequest(updateApplicationSchema), controller.update)
 router.delete('/:id', validateRequest(entityIdSchema), controller.delete)
 
+
 export default router
