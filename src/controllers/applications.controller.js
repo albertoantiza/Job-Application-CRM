@@ -1,21 +1,8 @@
 import { applicationService } from '../services/application.service.js'
-import { InternalError } from '../utils/errors.js'
 import { parsePagination, parseSort, formatPaginatedResponse } from '../utils/pagination.js'
 import { parseSearch } from '../utils/search.js'
 import { logger } from '../utils/logger.js'
-import prisma from '../config/prisma.js'
 import { createEntityController } from './factory.js'
-
-export const healthCheck = async (req, res) => {
-  try {
-    const applications = await prisma.application.findMany({ take: 1 })
-    return res.status(200).json({ data: { ok: true, count: applications.length } })
-  } catch (error) {
-    throw new InternalError('Database connection failed', {
-      details: error.message
-    })
-  }
-}
 
 const SEARCHABLE_FIELDS = ['role', 'status']
 const ALLOWED_SORT = ['id', 'role', 'status', 'companyId', 'createdAt', 'updatedAt']
