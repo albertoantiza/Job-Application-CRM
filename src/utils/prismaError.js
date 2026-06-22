@@ -1,11 +1,7 @@
-import { NotFoundError, BadRequestError } from './errors.js'
+import { BadRequestError } from './errors.js'
 
 export const isPrismaError = (error, code) => {
   return Boolean(error && error.code === code)
-}
-
-export const throwNotFound = (entityName) => {
-  throw new NotFoundError(`${entityName} not found`)
 }
 
 export const throwForeignKeyError = (field, relationLabel) => {

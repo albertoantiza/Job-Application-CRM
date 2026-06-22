@@ -1,12 +1,25 @@
 import prisma from '../config/prisma.js'
 import { BadRequestError } from '../utils/errors.js'
-import { isPrismaError, throwForeignKeyError, throwNotFound } from '../utils/prismaError.js'
+import { isPrismaError, throwForeignKeyError } from '../utils/prismaError.js'
 import { createBaseService } from './base.service.js'
 
+const SEARCHABLE_FIELDS = ['stage', 'notes']
 const base = createBaseService('interview')
 
 export const interviewService = {
   ...base,
+
+  async findAll(filters = {}, options = {}) {
+    const where = {}
+    const { search, ...fieldFilters } = filters
+    if (search) {
+      where.OR = SEARCHABLE_FIELDS.map(field => ({
+        [field]: { contains: search, mode: 'insensitive' }
+      }))
+    }
+    if (fieldFilters.applicationId) where.applicationId = Number(fieldFilters.applicationId)
+    return base.findMany({ where: Object.keys(where).length ? where : undefined, ...options })
+  },
 
   async create(data) {
     const { applicationId, date, stage, notes } = data
@@ -40,8 +53,6 @@ export const interviewService = {
     if (applicationId !== undefined && applicationId !== null) {
       updateData.application = { connect: { id: Number(applicationId) } }
     }
-    const updated = await base.update(id, updateData)
-    if (!updated) throwNotFound('Interview')
-    return updated
+    return base.update(id, updateData)
   }
 }

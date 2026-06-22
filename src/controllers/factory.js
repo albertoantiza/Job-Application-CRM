@@ -1,55 +1,50 @@
-import { throwNotFound } from '../utils/prismaError.js'
 import { parsePagination, parseSort, formatPaginatedResponse } from '../utils/pagination.js'
-import { parseSearch } from '../utils/search.js'
 import { logger } from '../utils/logger.js'
 
-export const createEntityController = (entityName, service, overrides = {}, options = {}) => {
+export const createEntityController = (service, options = {}, overrides = {}) => {
+  const {
+    sortableFields = ['id', 'createdAt', 'updatedAt'],
+    defaultSort = { id: 'asc' },
+    buildFilters = () => ({})
+  } = options
+
   const getAll =
     overrides.getAll ||
     (async (req, res) => {
-      const searchFilter = parseSearch(req.query, options.searchableFields || [])
-      const where = Object.keys(searchFilter).length ? searchFilter : undefined
+      const filters = buildFilters(req.query)
+      if (req.query.search) filters.search = String(req.query.search)
       const pagination = parsePagination(req.query)
-      const orderBy = parseSort(req.query, ['id', 'createdAt', 'updatedAt'])
-      const { entities, total } = await service.findMany({ where, orderBy, ...pagination })
+      const orderBy = parseSort(req.query, sortableFields, defaultSort)
+      const { entities, total } = await service.findAll(filters, { orderBy, ...pagination })
       const response = formatPaginatedResponse(entities, pagination, total)
-      logger.info(`${entityName} list returned ${entities.length} results`)
+      logger.info(`List returned ${entities.length} results`)
       return res.status(200).json(response)
     })
 
   const getById = async (req, res) => {
     const id = Number(req.params.id)
     const entity = await service.findById(id)
-    if (!entity) {
-      logger.warn(`${entityName} ${id} not found — getById`)
-      throwNotFound(entityName)
-    }
-    logger.info(`${entityName} ${id} retrieved`)
+    logger.info(`Entity ${id} retrieved`)
     return res.status(200).json({ data: entity })
   }
 
   const create = overrides.create || (async (req, res) => {
     const entity = await service.create(req.body)
-    logger.info(`${entityName} ${entity.id} created`)
+    logger.info(`Entity ${entity.id} created`)
     return res.status(201).json({ data: entity })
   })
 
-  const update = overrides.update || (async (req, res) => {
+  const update = async (req, res) => {
     const id = Number(req.params.id)
     const entity = await service.update(id, req.body)
-    if (!entity) throwNotFound(entityName)
-    logger.info(`${entityName} ${id} updated`)
+    logger.info(`Entity ${id} updated`)
     return res.status(200).json({ data: entity })
-  })
+  }
 
   const deleteById = async (req, res) => {
     const id = Number(req.params.id)
-    const deletedEntity = await service.delete(id)
-    if (!deletedEntity) {
-      logger.warn(`${entityName} ${id} not found — deleteById`)
-      throwNotFound(entityName)
-    }
-    logger.info(`${entityName} ${id} deleted`)
+    await service.delete(id)
+    logger.info(`Entity ${id} deleted`)
     return res.status(204).send()
   }
 

@@ -1,42 +1,26 @@
 import { companyService } from '../services/company.service.js'
-import { parsePagination, parseSort, formatPaginatedResponse } from '../utils/pagination.js'
-import { parseSearch } from '../utils/search.js'
 import { logger } from '../utils/logger.js'
 import { createEntityController } from './factory.js'
 
-const SEARCHABLE_FIELDS = ['name', 'website', 'location', 'status']
-const ALLOWED_SORT = ['id', 'name', 'website', 'location', 'status', 'createdAt', 'updatedAt']
-
-const ctrl = createEntityController('Company', companyService, {
-  async getAll(req, res) {
-    const { location, status } = req.query
-    const where = {
-      ...parseSearch(req.query, SEARCHABLE_FIELDS)
-    }
-    if (location) {
-      where.location = { contains: String(location), mode: 'insensitive' }
-    }
-    if (status) where.status = String(status)
-    const pagination = parsePagination(req.query)
-    const orderBy = parseSort(req.query, ALLOWED_SORT, { id: 'asc' })
-    const { entities, total } = await companyService.findMany({
-      where: Object.keys(where).length ? where : undefined,
-      orderBy,
-      ...pagination
-    })
-    const response = formatPaginatedResponse(entities, pagination, total)
-    logger.info(`Company list returned ${entities.length} results`)
-    return res.status(200).json(response)
-  },
+const ctrl = createEntityController(companyService, {
+  sortableFields: ['id', 'name', 'website', 'location', 'status', 'createdAt', 'updatedAt'],
+  buildFilters: (query) => {
+    const filters = {}
+    if (query.location) filters.location = String(query.location)
+    if (query.status) filters.status = String(query.status)
+    return filters
+  }
+}, {
   async create(req, res) {
     const newCompany = await companyService.create(req.body)
     logger.info(`Company ${newCompany.id} created — name="${req.body.name}"`)
     return res.status(201).json({ data: newCompany })
-  },
-}, { searchableFields: SEARCHABLE_FIELDS })
+  }
+})
 
-export const getCompanies = ctrl.getAll
-export const getCompanyById = ctrl.getById
-export const createCompany = ctrl.create
-export const updateCompanyById = ctrl.update
-export const deleteCompanyById = ctrl.delete
+export const getAll = ctrl.getAll
+export const getById = ctrl.getById
+export const create = ctrl.create
+export const update = ctrl.update
+const _delete = ctrl.delete
+export { _delete as delete }
