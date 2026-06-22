@@ -50,7 +50,7 @@ export const createEntityController = (entityName, service, overrides = {}, opti
       throwNotFound(entityName)
     }
     logger.info(`${entityName} ${id} deleted`)
-    return res.status(200).json({ data: deletedEntity })
+    return res.status(204).send()
   }
 
   return {
