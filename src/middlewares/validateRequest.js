@@ -34,14 +34,8 @@ export const validateRequest = (schema) => {
           )
         }
 
-        if (rules.type === 'string' && value !== undefined && value !== null) {
-          if (typeof value !== 'string') {
-            return fail(key, `${key} must be a string`)
-          }
-
-          if (!value.trim()) {
-            return fail(key, `${key} cannot be empty`)
-          }
+        if (rules.type === 'string' && typeof value === 'string' && !value.trim()) {
+          return fail(key, `${key} cannot be empty`)
         }
 
         if (rules.format === 'email' && value !== undefined && value !== null) {

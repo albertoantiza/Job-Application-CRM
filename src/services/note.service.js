@@ -1,5 +1,5 @@
 import prisma from '../config/prisma.js'
-import { BadRequestError } from '../utils/errors.js'
+import { ValidationError } from '../utils/errors.js'
 import { isPrismaError, throwForeignKeyError } from '../utils/prismaError.js'
 import { createBaseService } from './base.service.js'
 
@@ -40,7 +40,7 @@ export const noteService = {
 
   async update(id, data) {
     if (!Object.keys(data).length) {
-      throw new BadRequestError('No fields to update', {
+      throw new ValidationError('No fields to update', {
         details: 'Send at least one of: applicationId, content'
       })
     }
