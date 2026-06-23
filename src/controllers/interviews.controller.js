@@ -11,6 +11,7 @@ const ctrl = createEntityController(interviewService, {
   }
 }, {
   async create(req, res) {
+    req.body.userId = req.user.userId
     const newInterview = await interviewService.create(req.body)
     logger.info(`Interview ${newInterview.id} created — stage="${req.body.stage}"`)
     return res.status(201).json({ data: newInterview })

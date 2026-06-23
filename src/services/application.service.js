@@ -10,7 +10,7 @@ export const applicationService = {
   ...base,
 
   async findAll(filters = {}, options = {}) {
-    const where = {}
+    const where = { userId: filters.userId }
     const { search, ...fieldFilters } = filters
     if (search) {
       where.OR = SEARCHABLE_FIELDS.map(field => ({
@@ -23,13 +23,14 @@ export const applicationService = {
   },
 
   async create(data) {
-    const { companyId, role, status } = data
+    const { userId, companyId, role, status } = data
     try {
       return await prisma.application.create({
         data: {
+          userId,
           role,
           status: status || 'applied',
-          ...(companyId ? { company: { connect: { id: Number(companyId) } } } : {})
+          companyId: companyId ? Number(companyId) : null
         }
       })
     } catch (error) {
@@ -48,10 +49,8 @@ export const applicationService = {
     }
     const { companyId, ...rest } = data
     const updateData = { ...rest }
-    if (companyId !== undefined && companyId !== null) {
-      updateData.company = { connect: { id: Number(companyId) } }
-    } else if (companyId === null) {
-      updateData.company = { disconnect: true }
+    if (companyId !== undefined) {
+      updateData.companyId = companyId !== null ? Number(companyId) : null
     }
     return base.update(id, updateData)
   }

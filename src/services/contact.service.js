@@ -10,7 +10,7 @@ export const contactService = {
   ...base,
 
   async findAll(filters = {}, options = {}) {
-    const where = {}
+    const where = { userId: filters.userId }
     const { search, ...fieldFilters } = filters
     if (search) {
       where.OR = SEARCHABLE_FIELDS.map(field => ({
@@ -23,14 +23,15 @@ export const contactService = {
   },
 
   async create(data) {
-    const { name, email, companyId, status } = data
+    const { userId, name, email, companyId, status } = data
     try {
       return await prisma.contact.create({
         data: {
           name,
           email,
+          userId,
           status: status || 'active',
-          ...(companyId ? { company: { connect: { id: Number(companyId) } } } : {})
+          companyId: companyId ? Number(companyId) : null
         }
       })
     } catch (error) {
@@ -50,10 +51,7 @@ export const contactService = {
     const { companyId, ...rest } = data
     const updateData = { ...rest }
     if (companyId !== undefined) {
-      updateData.company =
-        companyId === null
-          ? { disconnect: true }
-          : { connect: { id: Number(companyId) } }
+      updateData.companyId = companyId !== null ? Number(companyId) : null
     }
     return base.update(id, updateData)
   }

@@ -12,6 +12,7 @@ const ctrl = createEntityController(contactService, {
   }
 }, {
   async create(req, res) {
+    req.body.userId = req.user.userId
     const newContact = await contactService.create(req.body)
     logger.info(`Contact ${newContact.id} created — name="${req.body.name}"`)
     return res.status(201).json({ data: newContact })

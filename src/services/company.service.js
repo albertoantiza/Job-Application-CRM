@@ -9,7 +9,7 @@ export const companyService = {
   ...base,
 
   async findAll(filters = {}, options = {}) {
-    const where = {}
+    const where = { userId: filters.userId }
     const { search, ...fieldFilters } = filters
     if (search) {
       where.OR = SEARCHABLE_FIELDS.map(field => ({
@@ -24,9 +24,9 @@ export const companyService = {
   },
 
   async create(data) {
-    const { name, website, location, status } = data
+    const { userId, name, website, location, status } = data
     return prisma.company.create({
-      data: { name, website: website || null, location: location || null, status: status || 'active' }
+      data: { userId, name, website: website || null, location: location || null, status: status || 'active' }
     })
   },
 

@@ -10,7 +10,7 @@ export const noteService = {
   ...base,
 
   async findAll(filters = {}, options = {}) {
-    const where = {}
+    const where = { userId: filters.userId }
     const { search, ...fieldFilters } = filters
     if (search) {
       where.OR = SEARCHABLE_FIELDS.map(field => ({
@@ -22,12 +22,13 @@ export const noteService = {
   },
 
   async create(data) {
-    const { applicationId, content } = data
+    const { userId, applicationId, content } = data
     try {
       return await prisma.note.create({
         data: {
+          userId,
           content,
-          application: { connect: { id: Number(applicationId) } }
+          applicationId: Number(applicationId)
         }
       })
     } catch (error) {
@@ -47,7 +48,7 @@ export const noteService = {
     const { applicationId, ...rest } = data
     const updateData = { ...rest }
     if (applicationId !== undefined && applicationId !== null) {
-      updateData.application = { connect: { id: Number(applicationId) } }
+      updateData.applicationId = Number(applicationId)
     }
     return base.update(id, updateData)
   }
