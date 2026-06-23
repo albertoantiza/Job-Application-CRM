@@ -38,6 +38,14 @@ export const validateRequest = (schema) => {
           return fail(key, `${key} cannot be empty`)
         }
 
+        if (rules.minLength !== undefined && typeof value === 'string' && value.length < rules.minLength) {
+          return fail(key, `${key} must be at least ${rules.minLength} characters`)
+        }
+
+        if (rules.maxLength !== undefined && typeof value === 'string' && value.length > rules.maxLength) {
+          return fail(key, `${key} must be at most ${rules.maxLength} characters`)
+        }
+
         if (rules.format === 'email' && value !== undefined && value !== null) {
           if (typeof value !== 'string' || !isValidEmail(value)) {
             return fail(key, `${key} must be a valid email`)

@@ -24,6 +24,22 @@ export class ValidationError extends ApiError {
   }
 }
 
+export class AuthError extends ApiError {
+  constructor(message = 'Authentication failed', options = {}) {
+    super(401, message, options)
+    this.name = 'AuthError'
+    this.type = 'auth'
+  }
+}
+
+export class ConflictError extends ApiError {
+  constructor(message = 'Resource conflict', options = {}) {
+    super(409, message, options)
+    this.name = 'ConflictError'
+    this.type = 'conflict'
+  }
+}
+
 export class InternalError extends ApiError {
   constructor(message = 'Internal server error', options = {}) {
     super(500, message, options)

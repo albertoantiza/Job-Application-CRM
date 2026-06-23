@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import { logger } from '../utils/logger.js'
 import * as healthController from '../controllers/health.controller.js'
+import authRoutes from './auth.routes.js'
 import applicationsRoutes from './applications.routes.js'
 import contactsRoutes from './contacts.routes.js'
 import companiesRoutes from './companies.routes.js'
@@ -12,6 +13,7 @@ const router = Router()
 logger.info('Registering routes...')
 
 router.get('/health', healthController.check)
+router.use('/auth', authRoutes)
 
 router.use('/applications', applicationsRoutes)
 router.use('/contacts', contactsRoutes)
