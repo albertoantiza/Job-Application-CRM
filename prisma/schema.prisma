@@ -8,16 +8,23 @@ datasource db {
 }
 
 model User {
-  id        Int           @id @default(autoincrement())
-  email     String        @unique
-  password  String
-  name      String?
-  createdAt DateTime      @default(now())
-  updatedAt DateTime      @updatedAt
+  id           Int           @id @default(autoincrement())
+  email        String        @unique
+  password     String
+  name         String?
+  companies    Company[]
+  applications Application[]
+  contacts     Contact[]
+  interviews   Interview[]
+  notes        Note[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
 }
 
 model Company {
   id           Int           @id @default(autoincrement())
+  userId       Int
+  user         User          @relation(fields: [userId], references: [id])
   name         String
   website      String?
   location     String?
@@ -26,10 +33,14 @@ model Company {
   contacts     Contact[]
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
+
+  @@index([userId])
 }
 
 model Application {
   id          Int          @id @default(autoincrement())
+  userId      Int
+  user        User         @relation(fields: [userId], references: [id])
   companyId   Int?
   company     Company?     @relation(fields: [companyId], references: [id], onDelete: SetNull)
   role        String
@@ -39,11 +50,14 @@ model Application {
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
 
+  @@index([userId])
   @@index([companyId])
 }
 
 model Contact {
   id          Int       @id @default(autoincrement())
+  userId      Int
+  user        User      @relation(fields: [userId], references: [id])
   companyId   Int?
   company     Company?  @relation(fields: [companyId], references: [id], onDelete: SetNull)
   name        String
@@ -52,11 +66,14 @@ model Contact {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
+  @@index([userId])
   @@index([companyId])
 }
 
 model Interview {
   id            Int          @id @default(autoincrement())
+  userId        Int
+  user          User         @relation(fields: [userId], references: [id])
   applicationId Int
   application   Application  @relation(fields: [applicationId], references: [id], onDelete: Cascade)
   date          DateTime
@@ -65,16 +82,20 @@ model Interview {
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
 
+  @@index([userId])
   @@index([applicationId])
 }
 
 model Note {
   id            Int          @id @default(autoincrement())
+  userId        Int
+  user          User         @relation(fields: [userId], references: [id])
   applicationId Int
   application   Application  @relation(fields: [applicationId], references: [id], onDelete: Cascade)
   content       String
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
 
+  @@index([userId])
   @@index([applicationId])
 }
