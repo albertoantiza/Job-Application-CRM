@@ -35,6 +35,5 @@ export const login = async (req, res) => {
 }
 
 export const me = async (req, res) => {
-  const user = await userService.findById(req.user.userId)
-  return res.status(200).json({ data: { user: sanitizeUser(user) } })
+  return res.status(200).json({ data: { user: req.user } })
 }

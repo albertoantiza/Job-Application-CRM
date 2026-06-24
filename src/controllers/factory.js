@@ -12,7 +12,7 @@ export const createEntityController = (service, options = {}, overrides = {}) =>
     overrides.getAll ||
     (async (req, res) => {
       const filters = buildFilters(req.query)
-      filters.userId = req.user.userId
+      filters.userId = req.user.id
       if (req.query.search) filters.search = String(req.query.search)
       const pagination = parsePagination(req.query)
       const orderBy = parseSort(req.query, sortableFields, defaultSort)
@@ -24,13 +24,13 @@ export const createEntityController = (service, options = {}, overrides = {}) =>
 
   const getById = async (req, res) => {
     const id = Number(req.params.id)
-    const entity = await service.findById(id, req.user.userId)
+    const entity = await service.findById(id, req.user.id)
     logger.info(`Entity ${id} retrieved`)
     return res.status(200).json({ data: entity })
   }
 
   const create = overrides.create || (async (req, res) => {
-    req.body.userId = req.user.userId
+    req.body.userId = req.user.id
     const entity = await service.create(req.body)
     logger.info(`Entity ${entity.id} created`)
     return res.status(201).json({ data: entity })
@@ -38,14 +38,14 @@ export const createEntityController = (service, options = {}, overrides = {}) =>
 
   const update = async (req, res) => {
     const id = Number(req.params.id)
-    const entity = await service.update(id, { ...req.body, userId: req.user.userId })
+    const entity = await service.update(id, { ...req.body, userId: req.user.id })
     logger.info(`Entity ${id} updated`)
     return res.status(200).json({ data: entity })
   }
 
   const deleteById = async (req, res) => {
     const id = Number(req.params.id)
-    await service.delete(id, req.user.userId)
+    await service.delete(id, req.user.id)
     logger.info(`Entity ${id} deleted`)
     return res.status(204).send()
   }

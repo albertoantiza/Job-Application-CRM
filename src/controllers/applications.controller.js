@@ -12,7 +12,7 @@ const ctrl = createEntityController(applicationService, {
   }
 }, {
   async create(req, res) {
-    req.body.userId = req.user.userId
+    req.body.userId = req.user.id
     const newApplication = await applicationService.create(req.body)
     logger.info(`Application ${newApplication.id} created — role="${req.body.role}"`)
     return res.status(201).json({ data: newApplication })

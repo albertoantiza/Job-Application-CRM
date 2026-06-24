@@ -12,7 +12,7 @@ const ctrl = createEntityController(companyService, {
   }
 }, {
   async create(req, res) {
-    req.body.userId = req.user.userId
+    req.body.userId = req.user.id
     const newCompany = await companyService.create(req.body)
     logger.info(`Company ${newCompany.id} created — name="${req.body.name}"`)
     return res.status(201).json({ data: newCompany })
