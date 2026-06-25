@@ -14,6 +14,11 @@ export const registerSchema = {
     name: {
       required: false,
       type: 'string'
+    },
+    role: {
+      required: false,
+      type: 'string',
+      enum: ['user', 'admin']
     }
   }
 }

@@ -4,7 +4,7 @@ import { ConflictError, NotFoundError } from '../utils/errors.js'
 
 export const userService = {
   async create(data) {
-    const { email, password, name } = data
+    const { email, password, name, role } = data
 
     const existing = await prisma.user.findUnique({ where: { email } })
     if (existing) throw new ConflictError('Email already in use')
@@ -15,7 +15,8 @@ export const userService = {
       data: {
         email,
         password: hashedPassword,
-        name: name || null
+        name: name || null,
+        role: role || 'user'
       }
     })
   },
