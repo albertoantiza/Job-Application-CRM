@@ -32,6 +32,14 @@ export class AuthError extends ApiError {
   }
 }
 
+export class ForbiddenError extends ApiError {
+  constructor(message = 'Forbidden', options = {}) {
+    super(403, message, options)
+    this.name = 'ForbiddenError'
+    this.type = 'forbidden'
+  }
+}
+
 export class ConflictError extends ApiError {
   constructor(message = 'Resource conflict', options = {}) {
     super(409, message, options)
