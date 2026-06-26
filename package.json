@@ -4,7 +4,9 @@
   "description": "This project is an educational and functional project for me to work in my backend skills. It is a CRM to track my job interview process, the companies I apply to, responses I get, contacts and all the information related to the job hunt.",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
     "format": "prettier --write .",
     "lint": "eslint . ",
     "lint:fix": "eslint . --fix ",
@@ -27,7 +29,8 @@
     "@eslint/js": "^10.0.1",
     "eslint": "^10.4.0",
     "prettier": "^3.8.3",
-    "prisma": "^6.19.3"
+    "prisma": "^6.19.3",
+    "vitest": "^4.1.9"
   },
   "dependencies": {
     "@prisma/client": "^6.19.3",
