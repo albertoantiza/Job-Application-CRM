@@ -26,6 +26,24 @@ export const errorHandler = (err, req, res, _next) => {
     return res.status(err.statusCode).json(payload)
   }
 
+  if (err instanceof SyntaxError && err.status === 400) {
+    logger.warn(`${req.method} ${req.originalUrl} -> 400 — Malformed request body`)
+    return res.status(400).json({
+      error: 'Malformed request body',
+      type: 'validation',
+      status: 400
+    })
+  }
+
+  if (err.name === 'JsonWebTokenError' || err.name === 'TokenExpiredError') {
+    logger.warn(`${req.method} ${req.originalUrl} -> 401 — ${err.message}`)
+    return res.status(401).json({
+      error: 'Invalid or expired token',
+      type: 'auth',
+      status: 401
+    })
+  }
+
   logger.error(err)
 
   return res.status(500).json({

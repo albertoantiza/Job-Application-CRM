@@ -50,7 +50,7 @@ describe('GET /api/companies', () => {
   })
 
   it('does not return companies from other users', async () => {
-    const { token, user } = await createTestUser({ email: 'alice@test.com' })
+    const { token } = await createTestUser({ email: 'alice@test.com' })
     const { user: otherUser } = await createTestUser({ email: 'bob@test.com' })
 
     await prisma.company.create({
@@ -63,6 +63,64 @@ describe('GET /api/companies', () => {
 
     expect(res.status).toBe(200)
     expect(res.body.data).toHaveLength(0)
+  })
+})
+
+describe('GET /api/companies/:id', () => {
+  it('returns a company by ID', async () => {
+    const { token, user } = await createTestUser({ email: 'byid@test.com' })
+
+    const company = await prisma.company.create({
+      data: { userId: user.id, name: 'My Company' }
+    })
+
+    const res = await request(app)
+      .get(`/api/companies/${company.id}`)
+      .set('Authorization', `Bearer ${token}`)
+
+    expect(res.status).toBe(200)
+    expect(res.body.data).toMatchObject({
+      id: company.id,
+      name: 'My Company',
+      userId: user.id
+    })
+  })
+
+  it('returns 404 when company belongs to another user', async () => {
+    const { token } = await createTestUser({ email: 'user_a@test.com' })
+    const { user: userB } = await createTestUser({ email: 'user_b@test.com' })
+
+    const company = await prisma.company.create({
+      data: { userId: userB.id, name: 'Not Yours' }
+    })
+
+    const res = await request(app)
+      .get(`/api/companies/${company.id}`)
+      .set('Authorization', `Bearer ${token}`)
+
+    expect(res.status).toBe(404)
+    expect(res.body).toMatchObject({ error: 'Company not found', status: 404 })
+  })
+
+  it('returns 404 for non-existent ID', async () => {
+    const { token } = await createTestUser({ email: 'noexist@test.com' })
+
+    const res = await request(app)
+      .get('/api/companies/999999')
+      .set('Authorization', `Bearer ${token}`)
+
+    expect(res.status).toBe(404)
+    expect(res.body).toMatchObject({ error: 'Company not found', status: 404 })
+  })
+
+  it('returns 400 for non-numeric ID', async () => {
+    const { token } = await createTestUser({ email: 'badi d@test.com' })
+
+    const res = await request(app)
+      .get('/api/companies/abc')
+      .set('Authorization', `Bearer ${token}`)
+
+    expect(res.status).toBe(400)
   })
 })
 
@@ -85,8 +143,8 @@ describe('POST /api/companies', () => {
     expect(res.body.data).toHaveProperty('createdAt')
   })
 
-  it('rejects creation without required name', async () => {
-    const { token } = await createTestUser({ email: 'badcreate@test.com' })
+  it('rejects creation without required name field', async () => {
+    const { token } = await createTestUser({ email: 'missing@test.com' })
 
     const res = await request(app)
       .post('/api/companies')
@@ -94,7 +152,57 @@ describe('POST /api/companies', () => {
       .send({ location: 'Berlin' })
 
     expect(res.status).toBe(400)
-    expect(res.body).toHaveProperty('error')
+    expect(res.body).toMatchObject({
+      error: 'name is required',
+      status: 400,
+      field: 'name'
+    })
+  })
+
+  it('rejects invalid status enum value', async () => {
+    const { token } = await createTestUser({ email: 'badenum@test.com' })
+
+    const res = await request(app)
+      .post('/api/companies')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ name: 'BadCo', status: 'nonexistent' })
+
+    expect(res.status).toBe(400)
+    expect(res.body).toMatchObject({
+      error: 'status must be one of: active, inactive',
+      status: 400,
+      field: 'status'
+    })
+  })
+
+  it('rejects empty name string', async () => {
+    const { token } = await createTestUser({ email: 'emptyname@test.com' })
+
+    const res = await request(app)
+      .post('/api/companies')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ name: '' })
+
+    expect(res.status).toBe(400)
+    expect(res.body).toMatchObject({
+      error: 'name cannot be empty',
+      status: 400
+    })
+  })
+})
+
+describe('POST /api/companies — malformed body', () => {
+  it('returns 400 for invalid JSON body', async () => {
+    const { token } = await createTestUser({ email: 'badjson@test.com' })
+
+    const res = await request(app)
+      .post('/api/companies')
+      .set('Authorization', `Bearer ${token}`)
+      .set('Content-Type', 'application/json')
+      .send('not-json-at-all')
+
+    expect(res.status).toBe(400)
+    expect(res.body).toMatchObject({ status: 400 })
   })
 })
 
