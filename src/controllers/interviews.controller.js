@@ -1,20 +1,13 @@
 import { interviewService } from '../services/interview.service.js'
-import { logger } from '../utils/logger.js'
 import { createEntityController } from './factory.js'
 
 const ctrl = createEntityController(interviewService, {
+  entityName: 'Interview',
   sortableFields: ['id', 'stage', 'date', 'applicationId', 'createdAt', 'updatedAt'],
   buildFilters: (query) => {
     const filters = {}
     if (query.applicationId) filters.applicationId = Number(query.applicationId)
     return filters
-  }
-}, {
-  async create(req, res) {
-    req.body.userId = req.user.id
-    const newInterview = await interviewService.create(req.body)
-    logger.info(`Interview ${newInterview.id} created — stage="${req.body.stage}"`)
-    return res.status(201).json({ data: newInterview })
   }
 })
 

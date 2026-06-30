@@ -1,5 +1,6 @@
 import prisma from '../config/prisma.js'
 import { NotFoundError } from '../utils/errors.js'
+import { isPrismaError } from '../utils/prismaError.js'
 
 export const adminService = {
   async listUsers() {
@@ -25,16 +26,22 @@ export const adminService = {
         data: { role },
         omit: { password: true }
       })
-    } catch {
-      throw new NotFoundError('User not found')
+    } catch (error) {
+      if (isPrismaError(error, 'P2025')) {
+        throw new NotFoundError('User not found')
+      }
+      throw error
     }
   },
 
   async deleteUser(id) {
     try {
       await prisma.user.delete({ where: { id } })
-    } catch {
-      throw new NotFoundError('User not found')
+    } catch (error) {
+      if (isPrismaError(error, 'P2025')) {
+        throw new NotFoundError('User not found')
+      }
+      throw error
     }
   }
 }

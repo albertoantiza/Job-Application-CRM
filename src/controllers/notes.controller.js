@@ -2,6 +2,7 @@ import { noteService } from '../services/note.service.js'
 import { createEntityController } from './factory.js'
 
 const ctrl = createEntityController(noteService, {
+  entityName: 'Note',
   sortableFields: ['id', 'content', 'applicationId', 'createdAt', 'updatedAt'],
   buildFilters: (query) => {
     const filters = {}

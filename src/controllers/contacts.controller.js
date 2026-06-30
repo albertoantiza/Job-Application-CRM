@@ -1,21 +1,14 @@
 import { contactService } from '../services/contact.service.js'
-import { logger } from '../utils/logger.js'
 import { createEntityController } from './factory.js'
 
 const ctrl = createEntityController(contactService, {
+  entityName: 'Contact',
   sortableFields: ['id', 'name', 'email', 'status', 'companyId', 'createdAt', 'updatedAt'],
   buildFilters: (query) => {
     const filters = {}
     if (query.companyId) filters.companyId = Number(query.companyId)
     if (query.status) filters.status = String(query.status)
     return filters
-  }
-}, {
-  async create(req, res) {
-    req.body.userId = req.user.id
-    const newContact = await contactService.create(req.body)
-    logger.info(`Contact ${newContact.id} created — name="${req.body.name}"`)
-    return res.status(201).json({ data: newContact })
   }
 })
 
