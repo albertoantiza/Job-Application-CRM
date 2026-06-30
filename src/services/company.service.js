@@ -1,6 +1,6 @@
 import prisma from '../config/prisma.js'
-import { ValidationError } from '../utils/errors.js'
 import { createBaseService } from './base.service.js'
+import { requireUpdateFields } from '../utils/updateFields.js'
 
 const SEARCHABLE_FIELDS = ['name', 'website', 'location', 'status']
 const base = createBaseService('company')
@@ -31,11 +31,7 @@ export const companyService = {
   },
 
   async update(id, data) {
-    if (!Object.keys(data).length) {
-      throw new ValidationError('No fields to update', {
-        details: 'Send at least one of: name, website, location, status'
-      })
-    }
+    requireUpdateFields(data, ['name', 'website', 'location', 'status'])
     return base.update(id, data)
   }
 }
