@@ -1,7 +1,7 @@
 import prisma from '../config/prisma.js'
-import { ValidationError } from '../utils/errors.js'
 import { isPrismaError, throwForeignKeyError } from '../utils/prismaError.js'
 import { createBaseService } from './base.service.js'
+import { requireUpdateFields } from '../utils/updateFields.js'
 
 const SEARCHABLE_FIELDS = ['name', 'email', 'status']
 const base = createBaseService('contact')
@@ -43,11 +43,7 @@ export const contactService = {
   },
 
   async update(id, data) {
-    if (!Object.keys(data).length) {
-      throw new ValidationError('No fields to update', {
-        details: 'Send at least one of: name, email, companyId, status'
-      })
-    }
+    requireUpdateFields(data, ['name', 'email', 'companyId', 'status'])
     const { companyId, ...rest } = data
     const updateData = { ...rest }
     if (companyId !== undefined) {
