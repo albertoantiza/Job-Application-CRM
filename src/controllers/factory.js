@@ -3,6 +3,7 @@ import { logger } from '../utils/logger.js'
 
 export const createEntityController = (service, options = {}, overrides = {}) => {
   const {
+    entityName = 'Entity',
     sortableFields = ['id', 'createdAt', 'updatedAt'],
     defaultSort = { id: 'asc' },
     buildFilters = () => ({})
@@ -18,35 +19,35 @@ export const createEntityController = (service, options = {}, overrides = {}) =>
       const orderBy = parseSort(req.query, sortableFields, defaultSort)
       const { entities, total } = await service.findAll(filters, { orderBy, ...pagination })
       const response = formatPaginatedResponse(entities, pagination, total)
-      logger.info(`List returned ${entities.length} results`)
+      logger.info(`${entityName} list returned ${entities.length} results`)
       return res.status(200).json(response)
     })
 
   const getById = async (req, res) => {
     const id = Number(req.params.id)
     const entity = await service.findById(id, req.user.id)
-    logger.info(`Entity ${id} retrieved`)
+    logger.info(`${entityName} ${id} retrieved`)
     return res.status(200).json({ data: entity })
   }
 
   const create = overrides.create || (async (req, res) => {
     req.body.userId = req.user.id
     const entity = await service.create(req.body)
-    logger.info(`Entity ${entity.id} created`)
+    logger.info(`${entityName} ${entity.id} created`)
     return res.status(201).json({ data: entity })
   })
 
   const update = async (req, res) => {
     const id = Number(req.params.id)
     const entity = await service.update(id, { ...req.body, userId: req.user.id })
-    logger.info(`Entity ${id} updated`)
+    logger.info(`${entityName} ${id} updated`)
     return res.status(200).json({ data: entity })
   }
 
   const deleteById = async (req, res) => {
     const id = Number(req.params.id)
     await service.delete(id, req.user.id)
-    logger.info(`Entity ${id} deleted`)
+    logger.info(`${entityName} ${id} deleted`)
     return res.status(204).send()
   }
 
