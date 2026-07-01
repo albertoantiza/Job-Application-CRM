@@ -22,8 +22,8 @@ HTTP Request
     │
     ▼
 ┌──────────────┐
-│  Middlewares  │  Request logging, auth, authorization, validation
-│  (chain)      │
+│  Middlewares │  Request logging, auth, authorization, validation
+│  (chain)     │
 └──────┬───────┘
        │
        ▼
