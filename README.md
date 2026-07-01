@@ -451,18 +451,177 @@ List endpoints support:
 
 ## Testing
 
-```bash
-npm test             # Run all tests once
-npm run test:watch   # Watch mode
-npm run test:coverage  # With coverage report
-```
+Tests use **Vitest** as the test runner and a dedicated PostgreSQL database (`crm_test`) for integration tests. Configuration is in `vitest.config.mjs` with `.env.test` loaded by `vitest.setup.mjs`.
 
-Tests use a dedicated PostgreSQL database (`crm_test`). See `.env.test` for the test database configuration.
+### Running tests
+
+```bash
+npm test                  # Run all tests once (CI mode)
+npm run test:watch        # Watch mode — re-runs on file changes
+npm run test:coverage     # Run with V8 coverage report
+
+# Run a single test file
+npx vitest run tests/unit/pagination.test.js
+
+# Run tests matching a pattern (e.g. all integration tests)
+npx vitest run tests/integration
+
+# Run a single test by name
+npx vitest run -t "returns a company by ID"
+
+# Run with UI (optional Vitest UI)
+npx vitest --ui
+```
 
 ### Test structure
 
-- `tests/unit/` — Pure function tests (pagination utils, service logic with mocked Prisma)
-- `tests/integration/` — Full-stack tests against the real test DB using Supertest
+Tests live in `tests/` and mirror the source structure:
+
+```
+tests/
+├── unit/
+│   ├── pagination.test.js        # Pure functions, no mocking needed
+│   └── base.service.test.js      # Service logic with mocked Prisma
+│
+└── integration/
+    ├── health.test.js            # GET /api/health (mocked Prisma)
+    ├── companies.test.js          # Full CRUD + auth against real DB
+    └── helpers.js                # Shared test utilities
+```
+
+| Layer | What it tests | Database | Speed |
+|---|---|---|---|
+| `tests/unit/` | Pure functions, isolated service logic | Mocked | Instant |
+| `tests/integration/` | Full request → response cycle via Supertest | Real PostgreSQL (`crm_test`) | ~ms per test |
+
+### Writing unit tests
+
+Unit tests import a module directly and test its functions in isolation. Dependencies (Prisma, external modules) are mocked with `vi.mock()`.
+
+```js
+// tests/unit/pagination.test.js
+import { describe, it, expect } from 'vitest'
+import { parsePagination } from '../../src/utils/pagination.js'
+
+describe('parsePagination', () => {
+  it('parses page and limit from query', () => {
+    const result = parsePagination({ page: '2', limit: '10' })
+    expect(result).toEqual({ skip: 10, take: 10, page: 2, limit: 10 })
+  })
+})
+```
+
+For service tests that depend on Prisma, mock the prisma config module before importing the service:
+
+```js
+// tests/unit/base.service.test.js
+import { describe, it, expect, vi } from 'vitest'
+
+vi.mock('../../src/config/prisma.js', () => ({
+  default: {
+    company: {
+      findMany: vi.fn(),
+      count: vi.fn(),
+      findUnique: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn()
+    }
+  }
+}))
+
+import { createBaseService } from '../../src/services/base.service.js'
+```
+
+### Writing integration tests
+
+Integration tests spin up the full Express app via Supertest and run against the real `crm_test` database.
+
+```js
+// tests/integration/companies.test.js
+import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest'
+import request from 'supertest'
+import prisma from '../../src/config/prisma.js'
+import { createTestUser, cleanupDatabase } from '../helpers.js'
+
+const app = (await import('../../src/app.js')).default
+
+beforeAll(async () => { await prisma.$connect() })
+beforeEach(async () => { await cleanupDatabase() })
+afterAll(async () => { await prisma.$disconnect() })
+
+describe('GET /api/companies', () => {
+  it('returns companies belonging to the authenticated user', async () => {
+    // Arrange — create a user + companies in the test DB
+    const { token, user } = await createTestUser({ email: 'owner@test.com' })
+    await prisma.company.createMany({
+      data: [
+        { userId: user.id, name: 'Acme Inc' },
+        { userId: user.id, name: 'Beta Corp' }
+      ]
+    })
+
+    // Act — send authenticated request
+    const res = await request(app)
+      .get('/api/companies')
+      .set('Authorization', `Bearer ${token}`)
+
+    // Assert
+    expect(res.status).toBe(200)
+    expect(res.body.data).toHaveLength(2)
+  })
+})
+```
+
+### Test database setup
+
+The test database (`crm_test`) is a separate PostgreSQL database from your development database. It must exist and have migrations applied:
+
+```bash
+# One-time setup
+createdb crm_test
+DATABASE_URL="postgresql://localhost:5432/crm_test" npx prisma migrate deploy
+```
+
+The connection is configured in `.env.test`:
+
+```
+DATABASE_URL=postgresql://user:password@localhost:5432/crm_test
+JWT_SECRET=test-secret-change-in-production
+```
+
+This file is loaded automatically by `vitest.setup.mjs` before any test runs. The test JWT secret is independent of your development secret, so test tokens don't interfere with development tokens.
+
+### Test helpers (`tests/helpers.js`)
+
+Shared utilities for integration tests:
+
+| Function | Purpose |
+|---|---|
+| `createTestUser(overrides?)` | Creates a user in the test DB, returns `{ user, token }` |
+| `cleanupDatabase()` | Truncates all tables (called in `beforeEach` to isolate tests) |
+| `authHeader(token)` | Returns `['Authorization', 'Bearer <token>']` |
+
+### How test isolation works
+
+Each test starts with a clean database:
+
+1. **`beforeAll`** — connects Prisma to the test DB
+2. **`beforeEach`** — calls `cleanupDatabase()` which deletes all rows from every table (in dependency order: Note → Interview → Contact → Application → Company → User)
+3. **Each test** — creates the exact data it needs via `createTestUser()` and Prisma directly
+4. **`afterAll`** — disconnects Prisma
+
+This guarantees tests never leak data to each other and can run in any order.
+
+### Testing patterns
+
+| Scenario | Pattern |
+|---|---|
+| **Authenticated request** | `createTestUser()` → use `token` in `Authorization` header |
+| **Unauthenticated request** | Omit the header altogether — expect `401` |
+| **Wrong token** | `Authorization: Bearer invalid` — expect `401` |
+| **Ownership scoping** | Create user A + company A, request as user B — expect `404` |
+| **Validation error** | Send an invalid body — expect `400` with `field` in response |
+| **Empty list** | Create a user with no data — expect `{ data: [] }` |
 
 ## Usage
 
