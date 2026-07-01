@@ -280,31 +280,108 @@ Application
 
 ### Prerequisites
 
-- Node.js 20+
-- PostgreSQL running locally
+- **Node.js 20+** — [nodejs.org](https://nodejs.org) (includes `npm` and `node --watch`)
+- **PostgreSQL** running locally — [postgresql.org/download](https://www.postgresql.org/download/)
+- **psql** command-line tool (ships with PostgreSQL)
 
-### Setup
+Verify everything is installed:
 
 ```bash
-# Install dependencies
-npm install
-
-# Copy environment config
-cp .env.example .env
-# Edit .env with your database credentials
-
-# Create the database and run migrations
-createdb job_crm
-npx prisma migrate dev
-
-# (Optional) Seed sample data
-npm run seed
-
-# Start the server
-node src/server.js
+node --version    # v20 or higher
+psql --version    # PostgreSQL is accessible
 ```
 
-The API starts on `http://localhost:3000`.
+### 1. Configure the database
+
+This project needs two databases: one for development and one for tests.
+
+```bash
+# Create both databases
+createdb job_crm
+createdb crm_test
+```
+
+If `createdb` fails, your PostgreSQL user might need different credentials. See [Troubleshooting](#troubleshooting) below.
+
+### 2. Set up environment variables
+
+```bash
+cp .env.example .env
+```
+
+Open `.env` and replace the placeholder values with your local PostgreSQL credentials:
+
+```env
+DATABASE_URL=postgresql://YOUR_USER:YOUR_PASSWORD@localhost:5432/job_crm
+JWT_SECRET=your-own-random-secret-at-least-32-chars
+```
+
+The `DATABASE_URL` format is: `postgresql://USER:PASSWORD@HOST:PORT/DATABASE_NAME`. The defaults are usually `postgresql://localhost:5432/job_crm` if your PostgreSQL allows peer/trust auth. If you set a password during PostgreSQL install, use it here.
+
+> **For tests**: a `.env.test` file already exists with `DATABASE_URL` pointing to `crm_test` and a separate JWT secret. This is loaded automatically when running tests — you may need to update the credentials there too.
+
+### 3. Install dependencies and run migrations
+
+```bash
+npm install
+npx prisma migrate dev
+```
+
+`prisma migrate dev` applies all pending migrations to the `job_crm` database and generates the Prisma client.
+
+For the test database, apply migrations separately:
+
+```bash
+DATABASE_URL="postgresql://localhost:5432/crm_test" npx prisma migrate deploy
+```
+
+### 4. (Optional) Seed sample data
+
+```bash
+npm run seed
+```
+
+This creates a demo user (`alberto@example.com` / `password123`) with sample companies, applications, interviews, contacts, and notes — useful for exploring the API.
+
+### 5. Start the server
+
+```bash
+npm run dev
+```
+
+The server starts on `http://localhost:3000`. The `--watch` flag automatically restarts when you edit source files.
+
+To verify the API is running:
+
+```bash
+curl http://localhost:3000/api/health
+# → { "data": { "status": "ok" } }
+```
+
+### Troubleshooting
+
+| Problem | Fix |
+|---|---|
+| `createdb: command not found` | PostgreSQL is not installed or not in your PATH. Install via [brew.sh](https://brew.sh) (`brew install postgresql`) or download from [postgresql.org](https://www.postgresql.org/download/). |
+| `createdb: role "user" does not exist` | Your PostgreSQL user name doesn't match your system user. Run `createdb job_crm` as a specific user: `createdb -U postgres job_crm` or create a role matching your system user. |
+| `prisma: command not found` | You skipped `npm install`. Run it first. |
+| `Error: Can't reach database server` | PostgreSQL isn't running. Start it: `brew services start postgresql` (Homebrew) or `sudo systemctl start postgresql` (Linux). |
+| `Error: database "job_crm" does not exist` | Run `createdb job_crm` before `npx prisma migrate dev`. |
+| `TokenExpiredError` or `JsonWebTokenError` | The JWT secret in `.env` was changed after tokens were issued. Log in again to get a new token. |
+
+### Scripts
+
+```bash
+npm run dev           # Start dev server with auto-restart on file changes
+npm start             # Start production server
+npm test              # Run all tests once
+npm run test:watch    # Run tests in watch mode
+npm run test:coverage # Run tests with coverage report
+npm run lint          # Run ESLint
+npm run lint:fix      # Run ESLint with auto-fix
+npm run format        # Format code with Prettier
+npm run seed          # Seed database with sample data
+```
 
 ## API Overview
 
@@ -389,13 +466,20 @@ Tests use a dedicated PostgreSQL database (`crm_test`). See `.env.test` for the 
 
 ## Usage
 
+All endpoints require a valid JWT token (except `/api/health` and `/api/auth/register`/`/api/auth/login`). Get one by registering a new user or using the seeded demo account.
+
 ```bash
-# Register and get a token
+# Option A: Register a new account
 TOKEN=$(curl -s -X POST http://localhost:3000/api/auth/register \
   -H "Content-Type: application/json" \
   -d '{"email":"me@example.com","password":"password123","name":"Me"}' \
   | node -e "process.stdin.resume(); let d=''; process.stdin.on('data',c=>d+=c); process.stdin.on('end',()=>console.log(JSON.parse(d).data.token))")
 
+# Option B: Use the seeded demo account (after running npm run seed)
+# TOKEN=$(curl -s -X POST http://localhost:3000/api/auth/login \
+#   -H "Content-Type: application/json" \
+#   -d '{"email":"alberto@example.com","password":"password123"}' \
+#   | node -e "process.stdin.resume(); let d=''; process.stdin.on('data',c=>d+=c); process.stdin.on('end',()=>console.log(JSON.parse(d).data.token))")
 # Create a company
 curl -X POST http://localhost:3000/api/companies \
   -H "Content-Type: application/json" \
@@ -419,14 +503,3 @@ curl -X POST http://localhost:3000/api/interviews \
   -d '{"applicationId": 1, "stage": "Technical Screen", "date": "2026-07-10T10:00:00Z"}'
 ```
 
-## Scripts
-
-```bash
-npm test              # Run tests
-npm run test:watch    # Run tests in watch mode
-npm run test:coverage # Run tests with coverage
-npm run lint          # Run ESLint
-npm run lint:fix      # Run ESLint with auto-fix
-npm run format        # Format with Prettier
-npm run seed          # Seed the database with sample data
-```
