@@ -1,10 +1,6 @@
 # Job Application CRM
 
-A personal backend API for tracking job applications during the job hunt.
-
-**Intent** — I built this to keep a structured record of every application I submit, every interview I attend, and every contact I make along the way. Instead of spreadsheets or scattered notes, this CRM gives me a single API to log, query, and review my job search data.
-
-**Backend focus** — The project deliberately puts the backend first. There is no frontend; everything is exposed through a REST API. The goal was to practice layered architecture (controllers → services → Prisma), error handling patterns, validation, pagination, and clean separation of concerns — all without the distraction of a UI.
+A personal REST API for tracking job applications, interviews, contacts, and notes during the job hunt. Backend-focused — no frontend, just a layered API built with Express 5 and Prisma.
 
 ## Tech Stack
 
@@ -13,23 +9,199 @@ A personal backend API for tracking job applications during the job hunt.
 | Runtime | Node.js (Express 5) |
 | Database | PostgreSQL |
 | ORM | Prisma |
-| Language | JavaScript (ES Modules) |
+| Auth | bcryptjs + jsonwebtoken |
+| Validation | Custom schema-based middleware |
+| Testing | Vitest + Supertest |
 
-### Why these choices
+## Architecture
 
-I started programming with JavaScript, so **Node.js** and **Express** were the natural pick — they're what I know best and let me move fast without fighting a new syntax. **JavaScript** keeps the stack uniform across the whole project.
+The project follows a **layered architecture** with clear separation of concerns:
 
-**PostgreSQL** is reliable, widely used, and a great fit for the relational data that a CRM needs (applications ↔ interviews ↔ contacts). **Prisma** sits on top of it because its schema-driven approach and type-safe queries make modeling those relationships straightforward and reduce boilerplate compared to raw SQL or other ORMs.
+```
+HTTP Request
+    │
+    ▼
+┌──────────────┐
+│  Middlewares  │  Request logging, auth, authorization, validation
+│  (chain)      │
+└──────┬───────┘
+       │
+       ▼
+┌──────────────┐
+│   Routes     │  Map URL paths to controllers, apply validators
+│  (factory)   │  Entity routes use createEntityRoutes()
+└──────┬───────┘
+       │
+       ▼
+┌──────────────┐
+│ Controllers  │  Parse req, delegate to service, format res
+│  (factory)   │  Entity controllers use createEntityController()
+└──────┬───────┘
+       │
+       ▼
+┌──────────────┐
+│  Services    │  Business logic, Prisma queries, error handling
+│              │  Entity services extend createBaseService()
+└──────┬───────┘
+       │
+       ▼
+┌──────────────┐
+│   Prisma     │  Type-safe queries, migrations
+│   (ORM)      │
+└──────┬───────┘
+       │
+       ▼
+┌──────────────┐
+│  PostgreSQL  │
+└──────────────┘
+```
 
-No TypeScript on purpose — I wanted to solidify my vanilla JavaScript skills and keep the setup lean. Every tool in the stack is something I've worked with before, so the focus stays on architecture, patterns and APIs.
+### Request flow
+
+A typical authenticated request goes through:
+
+1. **`requestLogger`** — logs method, URL, response status and duration
+2. **`authenticate`** — verifies `Authorization: Bearer <token>`, attaches `req.user`
+3. **`authorize`** (admin routes only) — checks user role
+4. **`validateRequest`** — validates params/body against a schema, returns 400 on failure
+5. **Route handler** — calls controller method
+6. **Controller** — calls service, formats response (always `{ data: ... }` or `{ data: [...], pagination: {...} }`)
+7. **Service** — runs Prisma queries, throws domain errors (`NotFoundError`, `ValidationError`, etc.)
+8. **Error handler** — catches all errors, returns consistent JSON (`{ error, type, status }`)
+
+### Factory patterns
+
+Entity resources (companies, applications, contacts, interviews, notes) share identical CRUD patterns. Two factories eliminate duplication:
+
+- **`routes/factory.js`** (`createEntityRoutes`) — generates GET `/:id`, POST `/`, PATCH `/:id`, DELETE `/:id` for any entity, applying `validateRequest` with the entity's schemas.
+- **`controllers/factory.js`** (`createEntityController`) — generates getAll, getById, create, update, delete methods that handle pagination, sorting, search filtering, and `req.user.id` scoping.
+
+Controllers pass options to the factory for entity-specific behavior:
+```js
+createEntityController(service, {
+  entityName: 'Company',
+  sortableFields: ['id', 'name', 'status', 'createdAt'],
+  buildFilters: (query) => ({ status: query.status })
+})
+```
+
+### Service layer
+
+- **`base.service.js`** (`createBaseService`) — provides `findMany`, `findById`, `update`, `delete` using a Prisma model name. All entity services extend it.
+- **Entity services** add `findAll` (with search/filter logic) and `create` (with FK validation).
+- **`user.service.js`** and **`admin.service.js`** are specialized services that don't use the base.
+
+### Auth & authorization
+
+- **Register** `POST /api/auth/register` — creates user, returns JWT
+- **Login** `POST /api/auth/login` — validates credentials, returns JWT
+- **Me** `GET /api/auth/me` — returns current user from token
+- **Role-based** — `authorize('admin')` middleware on admin routes (`/api/admin/*`)
+
+All entity routes (companies, applications, etc.) require authentication via the `authenticate` middleware applied in `routes/index.js`.
+
+### Error handling
+
+Errors flow from services → controllers → error handler middleware:
+
+- Domain errors (`NotFoundError`, `AuthError`, `ValidationError`, `ConflictError`) extend `ApiError` with a `statusCode`, `type`, optional `field` and `details`.
+- Prisma errors (`P2025` not found, `P2003` FK violation) are caught in services and re-thrown as domain errors.
+- The error handler returns a consistent JSON shape:
+  ```json
+  { "error": "Company not found", "type": "not_found", "status": 404 }
+  { "error": "name is required", "type": "validation", "status": 400, "field": "name" }
+  ```
+- Malformed JSON bodies are caught as 400, JWT errors outside the auth middleware are caught as 401.
+
+## Project Structure
+
+```
+src/
+├── config/
+│   ├── env.js           # Environment variables with defaults
+│   ├── permissions.js   # Role/permission definitions
+│   └── prisma.js        # Prisma client singleton
+│
+├── controllers/
+│   ├── factory.js        # createEntityController() — CRUD generator
+│   ├── companies.controller.js
+│   ├── applications.controller.js
+│   ├── contacts.controller.js
+│   ├── interviews.controller.js
+│   ├── notes.controller.js
+│   ├── auth.controller.js    # register, login, me
+│   ├── admin.controller.js   # user management
+│   └── health.controller.js  # DB health check
+│
+├── middlewares/
+│   ├── authenticate.js     # JWT verification → req.user
+│   ├── authorize.js        # Role-based access control
+│   ├── errorHandler.js     # Catches ApiError, SyntaxError, JWT errors
+│   ├── notFound.js         # 404 for unknown routes
+│   ├── requestLogger.js    # Request/response logging
+│   └── validateRequest.js  # Schema-based body/param validation
+│
+├── routes/
+│   ├── factory.js          # createEntityRoutes() — route generator
+│   ├── index.js            # Central router, mounts all endpoints
+│   ├── companies.routes.js
+│   ├── applications.routes.js
+│   ├── contacts.routes.js
+│   ├── interviews.routes.js
+│   ├── notes.routes.js
+│   ├── auth.routes.js
+│   └── admin.routes.js
+│
+├── services/
+│   ├── base.service.js      # createBaseService() — shared CRUD
+│   ├── company.service.js
+│   ├── application.service.js
+│   ├── contact.service.js
+│   ├── interview.service.js
+│   ├── note.service.js
+│   ├── user.service.js
+│   └── admin.service.js
+│
+├── utils/
+│   ├── ApiError.js          # Base error class
+│   ├── errors.js            # Domain errors (NotFound, Auth, Validation, etc.)
+│   ├── constants.js         # Status enums
+│   ├── logger.js            # Console logger wrapper
+│   ├── pagination.js        # parsePagination, parseSort, formatPaginatedResponse
+│   ├── prismaError.js       # Prisma error code helpers
+│   └── updateFields.js      # requireUpdateFields validator
+│
+├── validators/
+│   ├── common.js             # entityIdSchema
+│   ├── auth.schema.js
+│   ├── companies.schema.js
+│   ├── applications.schema.js
+│   ├── contacts.schema.js
+│   ├── interviews.schema.js
+│   └── notes.schema.js
+│
+├── app.js                  # Express app setup
+└── server.js               # Entry point
+```
 
 ## Models
 
-- **Companies** — Where you applied
-- **Applications** — Each role you applied for, linked to a company
-- **Contacts** — People you connected with, linked to a company
-- **Interviews** — Interview events, linked to an application
-- **Notes** — Free-form notes, linked to an application
+```
+User
+ ├── Company        (1:N — each company belongs to a user)
+ ├── Application    (1:N — each application belongs to a user)
+ ├── Contact        (1:N)
+ ├── Interview      (1:N)
+ └── Note           (1:N)
+
+Company
+ ├── Application    (1:N — each application references a company)
+ └── Contact        (1:N)
+
+Application
+ ├── Interview      (1:N — each interview references an application)
+ └── Note           (1:N)
+```
 
 ## Getting Started
 
@@ -41,18 +213,22 @@ No TypeScript on purpose — I wanted to solidify my vanilla JavaScript skills a
 ### Setup
 
 ```bash
-# Clone and install
+# Install dependencies
 npm install
 
 # Copy environment config
 cp .env.example .env
 # Edit .env with your database credentials
 
-# Run database migrations
+# Create the database and run migrations
+createdb job_crm
 npx prisma migrate dev
 
+# (Optional) Seed sample data
+npm run seed
+
 # Start the server
-npm run dev
+node src/server.js
 ```
 
 The API starts on `http://localhost:3000`.
@@ -61,33 +237,52 @@ The API starts on `http://localhost:3000`.
 
 All endpoints are under `/api`:
 
+### Authentication
+
 | Method | Endpoint | Description |
 |---|---|---|
-| `GET` | `/api/companies` | List companies (with search, sort, pagination) |
+| `POST` | `/api/auth/register` | Register a new user |
+| `POST` | `/api/auth/login` | Log in, receive JWT |
+| `GET` | `/api/auth/me` | Get current user (requires auth) |
+
+### Companies
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/api/companies` | List companies |
 | `POST` | `/api/companies` | Create a company |
 | `GET` | `/api/companies/:id` | Get a company by ID |
 | `PATCH` | `/api/companies/:id` | Update a company |
 | `DELETE` | `/api/companies/:id` | Delete a company |
-| `GET` | `/api/contacts` | List contacts |
-| `POST` | `/api/contacts` | Create a contact |
-| `GET` | `/api/contacts/:id` | Get a contact by ID |
-| `PATCH` | `/api/contacts/:id` | Update a contact |
-| `DELETE` | `/api/contacts/:id` | Delete a contact |
+
+### Applications
+
+| Method | Endpoint | Description |
+|---|---|---|
 | `GET` | `/api/applications` | List applications |
 | `POST` | `/api/applications` | Create an application |
 | `GET` | `/api/applications/:id` | Get an application by ID |
 | `PATCH` | `/api/applications/:id` | Update an application |
 | `DELETE` | `/api/applications/:id` | Delete an application |
-| `GET` | `/api/interviews` | List interviews |
-| `POST` | `/api/interviews` | Create an interview |
-| `GET` | `/api/interviews/:id` | Get an interview by ID |
-| `PATCH` | `/api/interviews/:id` | Update an interview |
-| `DELETE` | `/api/interviews/:id` | Delete an interview |
-| `GET` | `/api/notes` | List notes |
-| `POST` | `/api/notes` | Create a note |
-| `GET` | `/api/notes/:id` | Get a note by ID |
-| `PATCH` | `/api/notes/:id` | Update a note |
-| `DELETE` | `/api/notes/:id` | Delete a note |
+
+### Contacts, Interviews, Notes
+
+The same CRUD pattern applies at `/api/contacts`, `/api/interviews`, and `/api/notes`.
+
+### Admin
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/api/admin/users` | List all users (admin only) |
+| `GET` | `/api/admin/users/:id` | Get user by ID (admin only) |
+| `PATCH` | `/api/admin/users/:id/role` | Update user role (admin only) |
+| `DELETE` | `/api/admin/users/:id` | Delete user (admin only) |
+
+### Health
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/api/health` | Database connectivity check |
 
 ### Status values
 
@@ -98,65 +293,67 @@ All endpoints are under `/api`:
 
 List endpoints support:
 
-- `?search=` — Full-text search across relevant fields
-- `?page=&limit=` — Pagination
-- `?sortBy=&sortOrder=` — Sort by any allowed field
+| Param | Description |
+|---|---|
+| `?search=` | Full-text search across relevant fields |
+| `?page=&limit=` | Pagination (defaults: page=1, limit=20, max=100) |
+| `?sortBy=&sortOrder=` | Sort by allowed fields (`asc`/`desc`) |
+
+## Testing
+
+```bash
+npm test             # Run all tests once
+npm run test:watch   # Watch mode
+npm run test:coverage  # With coverage report
+```
+
+Tests use a dedicated PostgreSQL database (`crm_test`). See `.env.test` for the test database configuration.
+
+### Test structure
+
+- `tests/unit/` — Pure function tests (pagination utils, service logic with mocked Prisma)
+- `tests/integration/` — Full-stack tests against the real test DB using Supertest
 
 ## Usage
 
-Typical workflow — create a company, add an application, then log interviews and notes:
-
 ```bash
+# Register and get a token
+TOKEN=$(curl -s -X POST http://localhost:3000/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"email":"me@example.com","password":"password123","name":"Me"}' \
+  | node -e "process.stdin.resume(); let d=''; process.stdin.on('data',c=>d+=c); process.stdin.on('end',()=>console.log(JSON.parse(d).data.token))")
+
 # Create a company
 curl -X POST http://localhost:3000/api/companies \
   -H "Content-Type: application/json" \
-  -d '{"name": "Acme Corp", "website": "https://acme.example"}'
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{"name": "Acme Corp"}'
 
-# Create an application for that company
+# List companies with search and pagination
+curl "http://localhost:3000/api/companies?search=acme&page=1&limit=10" \
+  -H "Authorization: Bearer $TOKEN"
+
+# Create an application
 curl -X POST http://localhost:3000/api/applications \
   -H "Content-Type: application/json" \
-  -d '{"companyId": 1, "role": "Software Engineer", "source": "LinkedIn"}'
-
-# Update the application status after an interview
-curl -X PATCH http://localhost:3000/api/applications/1 \
-  -H "Content-Type: application/json" \
-  -d '{"status": "interview"}'
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{"companyId": 1, "role": "Software Engineer"}'
 
 # Log an interview
 curl -X POST http://localhost:3000/api/interviews \
   -H "Content-Type: application/json" \
-  -d '{"applicationId": 1, "round": 1, "date": "2026-06-17", "notes": "Went well"}'
-
-# Add a contact at the company
-curl -X POST http://localhost:3000/api/contacts \
-  -H "Content-Type: application/json" \
-  -d '{"companyId": 1, "name": "Jane Doe", "email": "jane@acme.example"}'
-
-# Take notes on the application
-curl -X POST http://localhost:3000/api/notes \
-  -H "Content-Type: application/json" \
-  -d '{"applicationId": 1, "content": "Follow up in a week"}'
-
-# Search and paginate your applications
-curl "http://localhost:3000/api/applications?search=engineer&page=1&limit=10"
-```
-
-## Project Structure
-
-```
-src/
-├── config/         # Prisma client, env config
-├── controllers/    # HTTP layer (thin, delegates to services)
-├── middlewares/     # Validation, error handling, request logging
-├── routes/         # Express route definitions
-├── services/       # Business logic, Prisma queries
-├── utils/          # Errors, pagination, search helpers
-└── validators/     # Per-entity request schemas
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{"applicationId": 1, "stage": "Technical Screen", "date": "2026-07-10T10:00:00Z"}'
 ```
 
 ## Scripts
 
 ```bash
-npm run dev      # Start dev server with nodemon
-npm run lint     # Run ESLint
+npm test              # Run tests
+npm run test:watch    # Run tests in watch mode
+npm run test:coverage # Run tests with coverage
+npm run lint          # Run ESLint
+npm run lint:fix      # Run ESLint with auto-fix
+npm run format        # Format with Prettier
+npm run seed          # Seed the database with sample data
 ```
