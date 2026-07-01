@@ -93,12 +93,85 @@ createEntityController(service, {
 
 ### Auth & authorization
 
-- **Register** `POST /api/auth/register` — creates user, returns JWT
-- **Login** `POST /api/auth/login` — validates credentials, returns JWT
-- **Me** `GET /api/auth/me` — returns current user from token
-- **Role-based** — `authorize('admin')` middleware on admin routes (`/api/admin/*`)
+Authentication is **JWT-based**. The flow is:
 
-All entity routes (companies, applications, etc.) require authentication via the `authenticate` middleware applied in `routes/index.js`.
+```
+Register/Login → receive JWT → send JWT in Authorization header → authenticate middleware → req.user
+```
+
+#### Registration (`POST /api/auth/register`)
+
+1. **`validateRequest`** checks the body against `registerSchema`:
+   - `email` — required, validated as email format
+   - `password` — required, 8–32 characters
+   - `name` — optional
+   - `role` — optional, must be `user` or `admin`
+2. **`authController.register`** calls `userService.create(req.body)`
+3. **`userService.create`** checks for duplicate email (`ConflictError` if taken), hashes password with bcrypt (cost factor 10), inserts the user
+4. **Controller** signs a JWT with `{ userId, email }` using `env.JWT_SECRET`, sanitizes the user object (removes `password`), returns both:
+
+```json
+{
+  "data": {
+    "user": { "id": 1, "email": "me@example.com", "name": "Me", "role": "user" },
+    "token": "eyJhbGciOiJIUzI1NiIs..."
+  }
+}
+```
+
+#### Login (`POST /api/auth/login`)
+
+1. **`validateRequest`** checks `email` and `password` are present
+2. **`authController.login`** looks up the user by email
+3. Returns `AuthError('Invalid email or password')` for **both** unknown email and wrong password — avoids leaking which field is incorrect
+4. Compares password with bcrypt, signs and returns the same shape as registration
+
+#### Authenticate middleware (`src/middlewares/authenticate.js`)
+
+Applied to all routes after `/auth` and `/health` in `routes/index.js`:
+
+```js
+router.get('/health', healthController.check)  // public
+router.use('/auth', authRoutes)                // public
+router.use(authenticate)                       // ↓ everything below requires auth
+router.use('/companies', companiesRoutes)      // protected
+// ...
+```
+
+The middleware:
+
+1. Reads `Authorization` header — must start with `Bearer `
+2. Extracts the token, verifies it with `jwt.verify(token, env.JWT_SECRET)`
+3. Looks up the user in the database with `prisma.user.findUnique` (excludes password)
+4. If valid, attaches the user object to `req.user` and calls `next()`
+5. On failure at any step, passes an `AuthError` to the error handler:
+
+| Failure point | Response |
+|---|---|
+| Missing/ malformed `Authorization` header | `401 { "error": "Authentication required" }` |
+| Invalid or expired token | `401 { "error": "Invalid or expired token" }` |
+| Token valid but user deleted | `401 { "error": "User not found" }` |
+
+#### Authorize middleware (`src/middlewares/authorize.js`)
+
+Applied on admin routes after `authenticate`:
+
+```js
+router.use(authorize('admin'))
+```
+
+Checks `req.user.role` against the allowed roles. If the user lacks the required role, returns:
+
+```json
+{ "error": "Insufficient permissions", "type": "forbidden", "status": 403 }
+```
+
+#### Security notes
+
+- Passwords are **never stored in plain text** — bcrypt hash with cost factor 10
+- The password field is **stripped from all responses** via `omit: { password: true }` in Prisma queries and the `sanitizeUser` helper
+- The JWT secret defaults to `dev-secret-change-in-production` in `.env.example` — **must be changed** for any real use
+- Token expiry is configurable via `JWT_EXPIRES_IN` (defaults to `7d`)
 
 ### Error handling
 
@@ -239,11 +312,11 @@ All endpoints are under `/api`:
 
 ### Authentication
 
-| Method | Endpoint | Description |
-|---|---|---|
-| `POST` | `/api/auth/register` | Register a new user |
-| `POST` | `/api/auth/login` | Log in, receive JWT |
-| `GET` | `/api/auth/me` | Get current user (requires auth) |
+| Method | Endpoint | Request body | Response |
+|---|---|---|---|
+| `POST` | `/api/auth/register` | `{ email, password, name?, role? }` | `201 { data: { user, token } }` |
+| `POST` | `/api/auth/login` | `{ email, password }` | `200 { data: { user, token } }` |
+| `GET` | `/api/auth/me` | — | `200 { data: { user } }` (requires auth) |
 
 ### Companies
 
